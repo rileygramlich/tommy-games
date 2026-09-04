@@ -31,7 +31,9 @@ export function createGame({ players, options = {}, seed = 1 }) {
       rounds: options.rounds ?? roundCount(n)
     },
     round: 0,
-    dealer: n - 1, // so round 1 is dealt by seat n-1 and bid first by seat 0
+    // Randomised so seat 0 is not always the dealer — and so not always last to
+    // bid in round one. startRound advances this before the first deal.
+    dealer: (seed % n + n - 1) % n,
     phase: 'idle',
     hands: Array.from({ length: n }, () => []),
     deck: [],

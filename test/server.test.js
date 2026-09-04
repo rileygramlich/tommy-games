@@ -97,11 +97,8 @@ test('two players and a bot finish a game of Wizard online', async (t) => {
   bob.send({ type: 'start' });
   assert.match((await denied).message, /host/);
 
-  const dealt = alice.await_((m) => m.type === 'view', 'first deal');
-  alice.send({ type: 'start' });
-  await dealt;
-
-  // Both humans hand their turns to the bot logic until somebody wins.
+  // Register the play handlers before dealing: with the bot delay at zero the
+  // server can run several turns before the next line of this test executes.
   const finished = Promise.all([alice, bob].map((client) =>
     new Promise((resolve, reject) => {
       const timer = setTimeout(() => reject(new Error(`${client.name} never saw the game end`)), 60000);
@@ -118,6 +115,7 @@ test('two players and a bot finish a game of Wizard online', async (t) => {
     })
   ));
 
+  alice.send({ type: 'start' });
   const [aliceEnd, bobEnd] = await finished;
   assert.equal(aliceEnd.round, aliceEnd.rounds);
   assert.deepEqual(aliceEnd.players.map((p) => p.score), bobEnd.players.map((p) => p.score));

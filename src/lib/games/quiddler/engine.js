@@ -29,7 +29,8 @@ export function createGame({ players, options = {}, seed = 1 }) {
       bonuses: options.bonuses !== false // longest word / most words, 10 each
     },
     round: 0,
-    dealer: n - 1,
+    // Randomised so seat 0 is not always dealt last in round one.
+    dealer: (seed % n + n - 1) % n,
     phase: 'idle',
     hands: [],
     drawPile: [],
