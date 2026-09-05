@@ -195,4 +195,13 @@
     background: color-mix(in srgb, var(--felt-deep) 78%, transparent); backdrop-filter: blur(4px);
   }
   .result { max-width: 400px; width: 100%; display: grid; gap: 0.9rem; justify-items: center; }
+
+  @media (max-width: 640px) {
+    .board { padding: 4px; gap: 1px; }
+    .cell { border-radius: 2px; }
+    .hand { min-height: 0; gap: 0.25rem; }
+    .players { gap: 0.35rem; }
+    .overlay { padding: 0.6rem; }
+    .result { max-height: 88dvh; overflow-y: auto; }
+  }
 </style>

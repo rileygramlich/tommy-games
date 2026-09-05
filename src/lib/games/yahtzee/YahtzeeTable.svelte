@@ -197,4 +197,20 @@
   .result { max-width: 420px; width: 100%; display: grid; gap: 0.9rem; justify-items: center; }
   .score { border-collapse: collapse; }
   .score td { padding: 0.2rem 0.6rem; }
+
+  @media (max-width: 640px) {
+    .tray { padding: 0.75rem; gap: 0.7rem; }
+    .die { width: clamp(46px, 13vw, 62px); height: clamp(46px, 13vw, 62px); }
+    .sheet { font-size: 0.78rem; }
+    .sheet th, .sheet td { padding: 0.2rem 0.35rem; }
+    /* Keep the box names in view while the columns scroll. */
+    .sheet th.cat, .sheet td.cat {
+      position: sticky; left: 0;
+      background: var(--paper-2);
+      box-shadow: 1px 0 0 var(--card-edge);
+    }
+    .card-wrap { padding: 0.6rem 0.5rem; }
+    .overlay { padding: 0.6rem; }
+    .result { max-height: 88dvh; overflow-y: auto; }
+  }
 </style>

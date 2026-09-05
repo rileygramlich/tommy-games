@@ -67,7 +67,7 @@
             <span class="pip" style="background:{COLOURS[p.seat]}"></span>
             <div>
               <div class="tiny">{p.name}</div>
-              <div class="tiny muted num">{p.score} pts · {p.pips} pips · {p.off} off</div>
+              <div class="tiny muted num">{p.score} pts · {p.pips} pips{p.off ? ` · ${p.off} off` : ''}</div>
             </div>
           </div>
         {/each}
@@ -276,4 +276,18 @@
   }
   .result { max-width: 420px; width: 100%; display: grid; gap: 0.9rem; justify-items: center; }
   .big { font-family: var(--serif); font-size: 1.5rem; }
+
+  @media (max-width: 700px) {
+    .board { padding: 0.3rem; }
+    .point { height: clamp(88px, 24vw, 165px); }
+    .checker { width: clamp(12px, 3.4vw, 26px); height: clamp(12px, 3.4vw, 26px); }
+    .checker.small { width: 13px; height: 13px; }
+    .bar-row { grid-template-columns: auto 1fr auto; gap: 0.35rem; padding: 0.3rem 0; }
+    .bar { min-width: 46px; padding: 0.2rem 0.3rem; }
+    .bar .label { display: none; }
+    .die { width: 26px; height: 26px; font-size: 0.85rem; }
+    .tallies { gap: 0.5rem; }
+    .overlay { padding: 0.6rem; }
+    .result { max-height: 88dvh; overflow-y: auto; }
+  }
 </style>

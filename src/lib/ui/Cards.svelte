@@ -46,4 +46,8 @@
   .gallery { max-width: 900px; margin: 1.5rem auto; }
   h2 { font-size: 1.05rem; }
   section { padding-top: 0.8rem; border-top: 1px solid var(--paper-3); }
+
+  @media (max-width: 640px) {
+    .gallery { gap: 0.6rem; }
+  }
 </style>

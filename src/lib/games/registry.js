@@ -29,6 +29,10 @@ import * as sequenceEngine from './sequence/engine.js';
 import * as sequenceBot from './sequence/bot.js';
 import SequenceTable from './sequence/SequenceTable.svelte';
 
+import * as mastermindEngine from './mastermind/engine.js';
+import * as mastermindBot from './mastermind/bot.js';
+import MastermindTable from './mastermind/MastermindTable.svelte';
+
 import * as backgammonEngine from './backgammon/engine.js';
 import * as backgammonBot from './backgammon/bot.js';
 import BackgammonTable from './backgammon/BackgammonTable.svelte';
@@ -155,6 +159,30 @@ export const GAMES = {
       { title: 'Bearing off', text: 'Once all fifteen of your checkers are home, you can start bearing them off. A die takes a checker off the matching point, or off a lower point if nothing is further back. First side to bear off all fifteen wins.' },
       { title: 'Scoring', text: 'A game is worth 1 point, 2 for a gammon — the loser bore nothing off — and 3 for a backgammon, where the loser still has a checker on the bar or in the winner’s home board. Matches run to the target score.' },
       { title: 'No cube', text: 'This table plays without the doubling cube.' }
+    ]
+  },
+
+  mastermind: {
+    ...mastermindEngine.meta,
+    engine: mastermindEngine, bot: mastermindBot, component: MastermindTable, ready: noop,
+    accent: '#6b4a8c',
+    length: '10–15 min',
+    blurb: 'One of you hides four coloured pegs; the other has ten guesses and nothing but the marks beside each row to go on. Then you swap.',
+    options: [
+      { key: 'colours', type: 'select', default: 6, label: 'Colours',
+        choices: [{ value: 6, label: '6 — standard' }, { value: 7, label: '7 — harder' }, { value: 8, label: '8 — cruel' }] },
+      { key: 'pegs', type: 'select', default: 4, label: 'Pegs in the code',
+        choices: [{ value: 4, label: '4' }, { value: 5, label: '5' }] },
+      { key: 'rounds', type: 'select', default: 4, label: 'Rounds',
+        choices: [{ value: 2, label: '2 — one each' }, { value: 4, label: '4' }, { value: 6, label: '6' }] },
+      { key: 'repeats', type: 'toggle', default: true, label: 'Allow repeated colours',
+        help: 'Turn this off and no colour appears twice in the code.' }
+    ],
+    rules: [
+      { title: 'The code', text: 'One player hides a row of four pegs, chosen from six colours, repeats allowed. The other player cannot see it.' },
+      { title: 'Guessing', text: 'The codebreaker lays down a row of four and is marked at once: a black mark for every peg that is the right colour in the right hole, a white mark for every peg that is the right colour somewhere else. Which mark belongs to which peg is never revealed.' },
+      { title: 'Ten tries', text: 'Crack it inside ten guesses or the code stands. The board does the marking, so nobody can miscount — deliberately or otherwise.' },
+      { title: 'Scoring', text: 'The codemaker scores one point for every guess it took, and one more if the code was never broken. Roles swap each round, so a hard code is worth as much as a sharp deduction.' }
     ]
   },
 

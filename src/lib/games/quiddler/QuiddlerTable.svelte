@@ -395,4 +395,21 @@
   .strong { font-weight: 700; }
   .good { color: #2f7d55; }
   .bad { color: var(--rose); }
+
+  @media (max-width: 640px) {
+    /* One thumb, one column: hands shrink, strips scroll, sheets scroll. */
+    .hand { min-height: 0; gap: 0.3rem; }
+    .seats { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: none; }
+    .seats::-webkit-scrollbar { display: none; }
+    .board { min-height: 0; padding: 0.7rem; }
+    .overlay { padding: 0.6rem; align-items: end; }
+    .sheet, .result { max-height: 88dvh; overflow-y: auto; }
+  }
+
+  @media (max-width: 640px) {
+    .zone.grow { min-width: 0; flex-basis: 100%; }
+    .slot { min-width: 68px; min-height: 84px; }
+    .wordrow { min-height: 46px; }
+    .actions { gap: 0.35rem; }
+  }
 </style>

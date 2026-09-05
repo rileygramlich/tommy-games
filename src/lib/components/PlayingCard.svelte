@@ -75,8 +75,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    width: 62px;
-    height: 88px;
+    width: clamp(46px, 13vw, 62px);
+    height: clamp(65px, 18.4vw, 88px);
     padding: 0;
     border-radius: 9px;
     border: 1px solid var(--card-edge);
@@ -87,8 +87,8 @@
     user-select: none;
     transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
   }
-  .card.sm { width: 46px; height: 66px; }
-  .card.lg { width: 78px; height: 110px; }
+  .card.sm { width: clamp(36px, 10vw, 46px); height: clamp(51px, 14.2vw, 66px); }
+  .card.lg { width: clamp(54px, 15vw, 78px); height: clamp(76px, 21.2vw, 110px); }
   .card.red { color: var(--rose); }
   .card.dimmed { filter: grayscale(0.55) brightness(0.86); opacity: 0.72; }
   button.card { cursor: pointer; }

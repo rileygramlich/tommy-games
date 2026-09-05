@@ -1,7 +1,7 @@
 # Tommy Games
 
-A small, growing shelf of card and board games that run in a browser. Eight are on
-it so far:
+A small, growing shelf of card and board games that run in a browser, on a phone
+or on a desk. Nine are on it so far:
 
 | Game | Players | What it is |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ it so far:
 | **Cribbage** | 2 | Peg to thirty-one, then count fifteens all the way to 121 |
 | **Sequence** | 2–3 | Cover the card, build five in a row, mind the jacks |
 | **Backgammon** | 2 | The oldest race there is, played to a match score |
+| **Mastermind** | 2 | Hide four pegs, or break the other player's in ten |
 | **Reversi** | 2 | Bracket a line and the whole line flips |
 | **Yahtzee** | 1–6 | Five dice, thirteen boxes, no way to fill them all well |
 
@@ -21,6 +22,10 @@ Three ways to play each one:
 | Solo against bots | Nothing — it all runs in the tab |
 | Pass-and-play | Nothing — hands hide behind a curtain between turns |
 | Online with friends | The little WebSocket server in `server/` running somewhere |
+
+Every screen is built for a phone first: no horizontal scrolling at 360px, cards
+and boards sized in viewport units, 40px tap targets, and overlays that behave
+like sheets.
 
 ## Running it
 

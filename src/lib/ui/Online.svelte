@@ -219,4 +219,10 @@
   .chat { max-height: 130px; overflow-y: auto; font-size: 0.84rem; display: grid; gap: 0.15rem; }
   .chat .line strong { color: var(--brass); }
   code { background: var(--paper-3); padding: 0.1em 0.35em; border-radius: 4px; }
+
+  @media (max-width: 480px) {
+    .roomrow { flex-wrap: wrap; }
+    .online form.row { flex-wrap: wrap; }
+    .online input[type="text"] { flex: 1 1 8rem; min-width: 0; }
+  }
 </style>

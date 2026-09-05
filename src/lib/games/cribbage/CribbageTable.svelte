@@ -191,4 +191,20 @@
   }
   .result { max-width: 420px; width: 100%; display: grid; gap: 0.9rem; justify-items: center; }
   .big { font-family: var(--serif); font-size: 1.5rem; }
+
+  @media (max-width: 640px) {
+    /* One thumb, one column: hands shrink, strips scroll, sheets scroll. */
+    .hand { min-height: 0; gap: 0.3rem; }
+    .seats { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: none; }
+    .seats::-webkit-scrollbar { display: none; }
+    .board { min-height: 0; padding: 0.7rem; }
+    .overlay { padding: 0.6rem; align-items: end; }
+    .sheet, .result { max-height: 88dvh; overflow-y: auto; }
+  }
+
+  @media (max-width: 640px) {
+    .show { max-width: 100%; }
+    .count-badge { position: static; }
+    .pile { gap: 0.25rem; }
+  }
 </style>

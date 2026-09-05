@@ -54,6 +54,9 @@ html, body { height: 100%; }
 
 body {
   margin: 0;
+  min-height: 100dvh;
+  overflow-x: hidden;
+  overscroll-behavior-y: none;
   font-family: var(--sans);
   color: var(--ink);
   background:
@@ -70,6 +73,8 @@ p { line-height: 1.6; margin: 0 0 0.9em; color: var(--ink-soft); }
 a { color: inherit; }
 
 button, input, select { font: inherit; color: inherit; }
+/* No 300ms wait for a double-tap that is never coming. */
+button, a, [role="button"], summary, label { touch-action: manipulation; }
 
 /* ---------------------------------------------------------------- controls */
 
@@ -79,6 +84,7 @@ button, input, select { font: inherit; color: inherit; }
   justify-content: center;
   gap: 0.5em;
   padding: 0.62em 1.15em;
+  min-height: 40px;
   border-radius: 999px;
   border: 1px solid var(--card-edge);
   background: var(--paper-2);
@@ -103,11 +109,14 @@ button, input, select { font: inherit; color: inherit; }
 }
 .btn.ghost { background: transparent; box-shadow: none; border-color: transparent; color: var(--ink-soft); }
 .btn.ghost:hover:not(:disabled) { background: color-mix(in srgb, var(--ink) 7%, transparent); box-shadow: none; }
-.btn.small { padding: 0.38em 0.8em; font-size: 0.87rem; }
+.btn.small { padding: 0.38em 0.8em; font-size: 0.87rem; min-height: 34px; }
 .btn.danger { color: var(--rose); border-color: color-mix(in srgb, var(--rose) 40%, transparent); }
 
 input[type="text"], input[type="password"], input[type="number"], select {
   padding: 0.6em 0.8em;
+  min-height: 40px;
+  /* iOS zooms in on any field under 16px when it takes focus. */
+  font-size: max(16px, 1rem);
   border-radius: var(--radius-sm);
   border: 1px solid var(--card-edge);
   background: var(--paper-2);
@@ -156,11 +165,35 @@ input:focus-visible, select:focus-visible, button:focus-visible, [tabindex]:focu
 .num { font-family: var(--tabular); font-variant-numeric: tabular-nums; }
 .row { display: flex; align-items: center; gap: 0.6rem; }
 .wrap { flex-wrap: wrap; }
-.spread { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+.spread { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
 .stack { display: flex; flex-direction: column; gap: 0.75rem; }
 .center { text-align: center; }
 
-.shell { max-width: 1080px; margin: 0 auto; padding: 1.1rem clamp(0.8rem, 3vw, 1.6rem) 4rem; }
+.shell {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.1rem clamp(0.7rem, 3vw, 1.6rem) calc(3rem + env(safe-area-inset-bottom));
+}
+
+/* ---------------------------------------------------------------- phones */
+
+@media (max-width: 640px) {
+  h1 { font-size: clamp(1.7rem, 8vw, 2.2rem); }
+  .panel { padding: 0.85rem 0.9rem; }
+  .shell { padding-top: 0.7rem; }
+  /* Headers stop being two columns and become two lines. */
+  .spread { gap: 0.5rem 0.75rem; }
+  .btn { padding: 0.6em 1em; }
+}
+
+/* Overlays are sheets on a phone: reachable, scrollable, thumb-sized buttons. */
+@media (max-width: 640px) {
+  .overlay-sheet {
+    max-height: min(88dvh, 640px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   * { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }

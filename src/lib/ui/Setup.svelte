@@ -117,4 +117,11 @@
   .check { display: flex; gap: 0.5rem; align-items: center; font-size: 0.88rem; color: var(--ink-soft); }
   .small-head { font-family: var(--serif); font-size: 1rem; }
   .tiny { font-size: 0.75rem; }
+
+  @media (max-width: 480px) {
+    /* The name field gets a line of its own rather than being squeezed. */
+    .seatrow { display: flex; flex-wrap: wrap; align-items: center; }
+    .seatrow input { flex: 1 1 7rem; min-width: 0; }
+    .check { flex-wrap: wrap; }
+  }
 </style>

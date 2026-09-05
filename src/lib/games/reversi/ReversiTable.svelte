@@ -132,4 +132,11 @@
   }
   .sheet { max-width: 420px; width: 100%; display: grid; gap: 0.9rem; justify-items: center; }
   .big { font-size: 1.6rem; font-family: var(--serif); }
+
+  @media (max-width: 640px) {
+    .board { padding: 5px; gap: 1px; }
+    .score { gap: 0.4rem; }
+    .overlay { padding: 0.6rem; }
+    .sheet { max-height: 88dvh; overflow-y: auto; }
+  }
 </style>

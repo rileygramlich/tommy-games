@@ -35,8 +35,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 58px;
-    height: 82px;
+    width: clamp(44px, 12.5vw, 58px);
+    height: clamp(62px, 17.7vw, 82px);
     padding: 0;
     border-radius: 9px;
     border: 1px solid var(--card-edge);
@@ -47,8 +47,8 @@
     user-select: none;
     transition: transform 0.14s ease, box-shadow 0.14s ease;
   }
-  .lcard.sm { width: 42px; height: 60px; }
-  .lcard.lg { width: 70px; height: 98px; }
+  .lcard.sm { width: clamp(34px, 9.5vw, 42px); height: clamp(48px, 13.5vw, 60px); }
+  .lcard.lg { width: clamp(50px, 14vw, 70px); height: clamp(70px, 19.8vw, 98px); }
   button.lcard { cursor: pointer; }
   .lcard.playable:hover { transform: translateY(-7px); box-shadow: var(--shadow-2); }
   .lcard.selected { transform: translateY(-6px); box-shadow: 0 0 0 2px var(--brass), var(--shadow-2); }
