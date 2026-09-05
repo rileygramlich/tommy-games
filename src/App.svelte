@@ -8,10 +8,7 @@
   import Rules from './lib/ui/Rules.svelte';
   import Settings from './lib/ui/Settings.svelte';
   import Online from './lib/ui/Online.svelte';
-  import WizardTable from './lib/games/wizard/WizardTable.svelte';
-  import QuiddlerTable from './lib/games/quiddler/QuiddlerTable.svelte';
-
-  const TABLES = { wizard: WizardTable, quiddler: QuiddlerTable };
+  import Cards from './lib/ui/Cards.svelte';
 
   let route = $state(parse(location.hash));
   let table = $state(null);
@@ -100,9 +97,11 @@
       <Settings {go} />
     {:else if route.screen === 'online'}
       <Online {go} />
+    {:else if route.screen === 'cards'}
+      <Cards {go} />
     {:else if route.screen === 'play' && game}
       {#if table && tableGame?.id === game.id}
-        {@const Table = TABLES[game.id]}
+        {@const Table = game.component}
         <Table {table} onexit={() => { table.destroy(); table = null; go('#/'); }} />
       {:else if loading}
         <p class="muted center loading">Shuffling…</p>

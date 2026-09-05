@@ -1,17 +1,10 @@
 <script>
   import { settings, saveSettings } from '../stores/settings.svelte.js';
+  import { defaultOptions } from '../games/registry.js';
 
   let { game, onstart, oncancel } = $props();
 
   const BOT_NAMES = ['Marigold', 'Bishop', 'Juniper', 'Vex', 'Clementine', 'Sable', 'Orrin'];
-
-  // App remounts this screen per game, so seeding state from the prop is safe.
-  // svelte-ignore state_referenced_locally
-  let seats = $state(buildSeats(game.defaultPlayers));
-  let hookRule = $state(false);
-  let bonuses = $state(true);
-  // svelte-ignore state_referenced_locally
-  let rounds = $state(game.id === 'quiddler' ? 8 : null);
 
   function buildSeats(n) {
     const you = settings.name || 'You';
@@ -20,6 +13,14 @@
       isBot: i !== 0
     }));
   }
+
+  // svelte-ignore state_referenced_locally
+  let seats = $state(buildSeats(game.defaultPlayers));
+  // svelte-ignore state_referenced_locally
+  let options = $state(defaultOptions(game));
+
+  const fixedSeats = $derived(game.minPlayers === game.maxPlayers);
+  const humans = $derived(seats.filter((s) => !s.isBot).length);
 
   function addSeat() {
     if (seats.length >= game.maxPlayers) return;
@@ -33,11 +34,8 @@
     const human = seats.find((s) => !s.isBot);
     if (human && human.name.trim()) saveSettings({ name: human.name.trim() });
     const players = seats.map((s, i) => ({ name: s.name.trim() || `Seat ${i + 1}`, isBot: s.isBot }));
-    const options = game.id === 'wizard' ? { hookRule } : { bonuses, rounds: Number(rounds) };
-    onstart({ players, options });
+    onstart({ players, options: { ...options } });
   }
-
-  const humans = $derived(seats.filter((s) => !s.isBot).length);
 </script>
 
 <div class="setup stack">
@@ -50,8 +48,13 @@
   </div>
 
   <p class="muted">
-    {game.minPlayers}–{game.maxPlayers} seats. Mark a seat as a bot to play against the house, or
-    leave several as people and pass the device around — hands stay hidden between turns.
+    {#if fixedSeats}
+      {game.name} takes exactly {game.minPlayers} players.
+    {:else}
+      {game.minPlayers}–{game.maxPlayers} seats.
+    {/if}
+    Mark a seat as a bot to play against the house, or leave several as people and pass the
+    device around — hands stay hidden between turns.
   </p>
 
   <div class="panel stack">
@@ -63,37 +66,39 @@
           <button class="btn small" class:on={!seat.isBot} onclick={() => (seat.isBot = false)}>Person</button>
           <button class="btn small" class:on={seat.isBot} onclick={() => (seat.isBot = true)}>Bot</button>
         </div>
-        <button
-          class="btn ghost small"
-          disabled={seats.length <= game.minPlayers}
-          onclick={() => removeSeat(i)}
-          aria-label={`Remove seat ${i + 1}`}
-        >✕</button>
+        {#if !fixedSeats}
+          <button class="btn ghost small" disabled={seats.length <= game.minPlayers}
+            onclick={() => removeSeat(i)} aria-label={`Remove seat ${i + 1}`}>✕</button>
+        {/if}
       </div>
     {/each}
-    <button class="btn small" disabled={seats.length >= game.maxPlayers} onclick={addSeat}>+ Add seat</button>
-  </div>
-
-  <div class="panel stack">
-    <strong class="small-head">House rules</strong>
-    {#if game.id === 'wizard'}
-      <label class="check">
-        <input type="checkbox" bind:checked={hookRule} />
-        <span>Screw the dealer — the dealer may not make the bids add up to the tricks available.</span>
-      </label>
-    {:else}
-      <label class="check">
-        <input type="checkbox" bind:checked={bonuses} />
-        <span>Round bonuses — 10 points each for the longest word and the most words.</span>
-      </label>
-      <label class="check">
-        <span>Rounds</span>
-        <select bind:value={rounds}>
-          {#each [4, 6, 8] as n (n)}<option value={n}>{n} (up to {n + 2} cards)</option>{/each}
-        </select>
-      </label>
+    {#if !fixedSeats}
+      <button class="btn small" disabled={seats.length >= game.maxPlayers} onclick={addSeat}>+ Add seat</button>
     {/if}
   </div>
+
+  {#if game.options.length}
+    <div class="panel stack">
+      <strong class="small-head">House rules</strong>
+      {#each game.options as option (option.key)}
+        {#if option.type === 'toggle'}
+          <label class="check">
+            <input type="checkbox" bind:checked={options[option.key]} />
+            <span>{option.label}{#if option.help} — <span class="muted">{option.help}</span>{/if}</span>
+          </label>
+        {:else}
+          <label class="check">
+            <span>{option.label}</span>
+            <select bind:value={options[option.key]}>
+              {#each option.choices as choice (choice.value)}
+                <option value={choice.value}>{choice.label}</option>
+              {/each}
+            </select>
+          </label>
+        {/if}
+      {/each}
+    </div>
+  {/if}
 
   <div class="row wrap">
     <button class="btn primary" onclick={start}>Deal</button>

@@ -2,9 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { Online, RemoteTable } from '../net/online.svelte.js';
   import { settings } from '../stores/settings.svelte.js';
-  import { GAMES, GAME_LIST } from '../games/registry.js';
-  import WizardTable from '../games/wizard/WizardTable.svelte';
-  import QuiddlerTable from '../games/quiddler/QuiddlerTable.svelte';
+  import { GAMES, GAME_LIST, getGame } from '../games/registry.js';
 
   let { go } = $props();
 
@@ -25,8 +23,10 @@
   onDestroy(() => online.close());
 
   // Quiddler needs its word list in the browser too, for live word checking.
+  // Some games need to load something before they can render — Quiddler's word list.
   $effect(() => {
-    if (online.room?.game === 'quiddler') GAMES.quiddler.ready();
+    const game = online.room ? getGame(online.room.game) : null;
+    if (game) game.ready();
   });
 
   const room = $derived(online.room);
@@ -95,11 +95,8 @@
       </p>
     </div>
   {:else if room && room.started && online.view}
-    {#if room.game === 'wizard'}
-      <WizardTable {table} onexit={() => online.leaveRoom()} />
-    {:else}
-      <QuiddlerTable {table} onexit={() => online.leaveRoom()} />
-    {/if}
+    {@const Table = getGame(room.game).component}
+    <Table {table} onexit={() => online.leaveRoom()} />
   {:else if room}
     <div class="panel stack">
       <div class="spread">

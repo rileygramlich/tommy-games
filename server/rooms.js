@@ -4,12 +4,30 @@ import * as wizardEngine from '../src/lib/games/wizard/engine.js';
 import * as wizardBot from '../src/lib/games/wizard/bot.js';
 import * as quiddlerEngine from '../src/lib/games/quiddler/engine.js';
 import * as quiddlerBot from '../src/lib/games/quiddler/bot.js';
+import * as euchreEngine from '../src/lib/games/euchre/engine.js';
+import * as euchreBot from '../src/lib/games/euchre/bot.js';
+import * as cribbageEngine from '../src/lib/games/cribbage/engine.js';
+import * as cribbageBot from '../src/lib/games/cribbage/bot.js';
+import * as sequenceEngine from '../src/lib/games/sequence/engine.js';
+import * as sequenceBot from '../src/lib/games/sequence/bot.js';
+import * as backgammonEngine from '../src/lib/games/backgammon/engine.js';
+import * as backgammonBot from '../src/lib/games/backgammon/bot.js';
+import * as reversiEngine from '../src/lib/games/reversi/engine.js';
+import * as reversiBot from '../src/lib/games/reversi/bot.js';
+import * as yahtzeeEngine from '../src/lib/games/yahtzee/engine.js';
+import * as yahtzeeBot from '../src/lib/games/yahtzee/bot.js';
 import { randomSeed } from '../src/lib/games/rng.js';
 import { recordResult } from './auth.js';
 
 const ENGINES = {
   wizard: { engine: wizardEngine, bot: wizardBot, ...wizardEngine.meta },
-  quiddler: { engine: quiddlerEngine, bot: quiddlerBot, ...quiddlerEngine.meta }
+  quiddler: { engine: quiddlerEngine, bot: quiddlerBot, ...quiddlerEngine.meta },
+  euchre: { engine: euchreEngine, bot: euchreBot, ...euchreEngine.meta },
+  cribbage: { engine: cribbageEngine, bot: cribbageBot, ...cribbageEngine.meta },
+  sequence: { engine: sequenceEngine, bot: sequenceBot, ...sequenceEngine.meta },
+  backgammon: { engine: backgammonEngine, bot: backgammonBot, ...backgammonEngine.meta },
+  reversi: { engine: reversiEngine, bot: reversiBot, ...reversiEngine.meta },
+  yahtzee: { engine: yahtzeeEngine, bot: yahtzeeBot, ...yahtzeeEngine.meta }
 };
 
 const BOT_NAMES = ['Marigold', 'Bishop', 'Juniper', 'Vex', 'Clementine', 'Sable', 'Orrin'];
@@ -17,6 +35,10 @@ const BOT_NAMES = ['Marigold', 'Bishop', 'Juniper', 'Vex', 'Clementine', 'Sable'
 const BOT_DELAY = Number(process.env.BOT_DELAY ?? 900);
 const TRICK_PAUSE = Number(process.env.TRICK_PAUSE ?? 1600);
 const ABSENT_GRACE = Number(process.env.ABSENT_GRACE ?? 8000); // then a bot plays for them
+
+// Pauses the table clears by itself, and pauses that wait for a person to read them.
+const AUTO_PHASES = new Set(['trickEnd', 'turnEnd']);
+const WAIT_PHASES = new Set(['roundEnd', 'handEnd', 'gameEnd', 'show']);
 
 export const rooms = new Map();
 let dictionary = null;
@@ -170,12 +192,12 @@ function schedule(room, broadcast) {
   if (active == null) return;
   const phase = room.state.phase;
 
-  if (phase === 'trickEnd') {
+  if (AUTO_PHASES.has(phase)) {
     room.timer = setTimeout(() => step(room, active, { type: 'continue' }, broadcast), TRICK_PAUSE);
     return;
   }
   const seat = room.seats[active];
-  if (phase === 'roundEnd') {
+  if (WAIT_PHASES.has(phase)) {
     // Humans read the scoreboard at their own pace; an all-bot table moves on.
     if (room.seats.every((s) => s.isBot || !s.connected)) {
       room.timer = setTimeout(() => step(room, active, { type: 'continue' }, broadcast), TRICK_PAUSE);

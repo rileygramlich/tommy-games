@@ -8,6 +8,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { WebSocket } from 'ws';
 import * as wizardBot from '../src/lib/games/wizard/bot.js';
+import * as reversiBot from '../src/lib/games/reversi/bot.js';
 
 const PORT = 8900 + (process.pid % 400);
 const dataDir = mkdtempSync(join(tmpdir(), 'tommy-games-test-'));
@@ -134,4 +135,53 @@ test('two players and a bot finish a game of Wizard online', async (t) => {
   assert.equal(users.alice.stats.wizard.won + users.bob.stats.wizard.won <= 2, true);
   assert.equal(users.alice.hash.length, 64, 'passwords are stored hashed, never in the clear');
   assert.equal(JSON.stringify(users).includes('felt-table'), false);
+});
+
+test('a second game type plays over the same wires', async (t) => {
+  const server = await startServer();
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
+
+  const dark = new Client('dark');
+  const light = new Client('light');
+  await Promise.all([dark.ready, light.ready]);
+
+  const darkIn = dark.await_((m) => m.type === 'session', 'dark session');
+  dark.send({ type: 'register', username: 'dark', password: 'felt-table' });
+  await darkIn;
+  const lightIn = light.await_((m) => m.type === 'session', 'light session');
+  light.send({ type: 'register', username: 'light', password: 'felt-table' });
+  await lightIn;
+
+  const made = dark.await_((m) => m.type === 'room', 'reversi room');
+  dark.send({ type: 'createRoom', game: 'reversi', name: 'Board' });
+  const code = (await made).room.id;
+
+  const joined = light.await_((m) => m.type === 'room' && m.room.seats.length === 2, 'light seated');
+  light.send({ type: 'joinRoom', roomId: code });
+  await joined;
+
+  const finished = Promise.all([dark, light].map((client) =>
+    new Promise((resolve, reject) => {
+      const timer = setTimeout(() => reject(new Error(`${client.name} never saw the board fill`)), 60000);
+      client.handlers.push((msg) => {
+        if (msg.type !== 'view') return false;
+        const v = msg.view;
+        if (v.phase === 'gameOver') { clearTimeout(timer); resolve(v); return true; }
+        if (v.turn === v.seat) {
+          const move = reversiBot.chooseMove(v);
+          if (move) client.send({ type: 'move', move });
+        }
+        return false;
+      });
+    })
+  ));
+
+  dark.send({ type: 'start' });
+  const [darkEnd, lightEnd] = await finished;
+  assert.deepEqual(darkEnd.players.map((p) => p.discs), lightEnd.players.map((p) => p.discs));
+  assert.ok(darkEnd.players[0].discs + darkEnd.players[1].discs >= 40, 'the board filled up');
+  assert.ok(darkEnd.winners.length >= 1);
+
+  dark.close();
+  light.close();
 });

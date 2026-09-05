@@ -3,6 +3,10 @@
 import { botDelay } from './settings.svelte.js';
 import { randomSeed } from '../games/rng.js';
 
+// Phases that are pauses rather than decisions, across every game on the shelf.
+const AUTO_PHASES = new Set(['trickEnd', 'turnEnd']);
+const WAIT_PHASES = new Set(['roundEnd', 'handEnd', 'gameEnd', 'show']);
+
 export class LocalTable {
   view = $state(null);
   /** Pass-and-play curtain: true while the device is between two human players. */
@@ -77,13 +81,14 @@ export class LocalTable {
     if (active == null) return;
     const phase = this.#state.phase;
 
-    // Pause on a finished trick so people can see who took it.
-    if (phase === 'trickEnd') {
+    // Beats that clear themselves after a moment: a finished trick, a played-out
+    // backgammon turn. Long enough to see what happened.
+    if (AUTO_PHASES.has(phase)) {
       this.#timer = setTimeout(() => { this.continue_(); }, Math.max(900, botDelay() * 1.6));
       return;
     }
-    // The round summary waits for a human, unless the table is all bots.
-    if (phase === 'roundEnd') {
+    // Summaries wait for someone to read them, unless the table is all bots.
+    if (WAIT_PHASES.has(phase)) {
       if (!this.#humans.length) this.#timer = setTimeout(() => this.continue_(), 400);
       return;
     }

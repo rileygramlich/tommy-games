@@ -20,7 +20,9 @@
         <h2>{game.name}</h2>
         <p class="tagline">{game.tagline}</p>
         <p class="blurb">{game.blurb}</p>
-        <div class="meta tiny muted">{game.minPlayers}–{game.maxPlayers} players · 20–40 min</div>
+        <div class="meta tiny muted">
+          {game.minPlayers === game.maxPlayers ? `${game.minPlayers} players` : `${game.minPlayers}–${game.maxPlayers} players`} · {game.length}
+        </div>
         <div class="row wrap">
           <button class="btn primary" onclick={() => go(`#/play/${game.id}`)}>Play</button>
           <button class="btn ghost small" onclick={() => go(`#/rules/${game.id}`)}>How it works</button>

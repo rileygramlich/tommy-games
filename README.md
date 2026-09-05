@@ -1,9 +1,18 @@
 # Tommy Games
 
-A small, growing shelf of card games that run in a browser. Two are on it so far:
+A small, growing shelf of card and board games that run in a browser. Eight are on
+it so far:
 
-- **Wizard** — trick-taking where you must predict your tricks exactly. 3–6 players.
-- **Quiddler** — eight rounds of letter cards; spell your whole hand and go out. 2–8 players.
+| Game | Players | What it is |
+| --- | --- | --- |
+| **Wizard** | 3–6 | Trick-taking where you must predict your tricks exactly |
+| **Quiddler** | 2–8 | Eight rounds of letter cards; spell your hand and go out |
+| **Euchre** | 4 | Two teams, twenty-four cards, and a jack that changes sides |
+| **Cribbage** | 2 | Peg to thirty-one, then count fifteens all the way to 121 |
+| **Sequence** | 2–3 | Cover the card, build five in a row, mind the jacks |
+| **Backgammon** | 2 | The oldest race there is, played to a match score |
+| **Reversi** | 2 | Bracket a line and the whole line flips |
+| **Yahtzee** | 1–6 | Five dice, thirteen boxes, no way to fill them all well |
 
 Three ways to play each one:
 
@@ -28,9 +37,11 @@ For online play, put the server address into **Settings → Online play**
 ## How it fits together
 
 ```
-src/lib/games/<game>/engine.js   pure rules: createGame, legalMoves, applyMove, view
-src/lib/games/<game>/bot.js      picks a move given one seat's view
+src/lib/games/<game>/engine.js       pure rules: createGame, legalMoves, applyMove, view
+src/lib/games/<game>/bot.js          picks a move given one seat's view
 src/lib/games/<game>/*Table.svelte   the table screen
+src/lib/games/registry.js            the shelf: one entry per game, everything reads this
+src/lib/games/cards.js               a standard deck, shared by the card games
 src/lib/stores/localTable.svelte.js  runs an engine in the browser, drives bots
 src/lib/net/online.svelte.js         the same surface, backed by a WebSocket
 server/                              lobby, accounts, and authoritative tables
@@ -42,8 +53,24 @@ online games, and never sends a seat anything it should not see — `view(state,
 seat)` is the only way state leaves the engine. Bots read that same view, so they
 know exactly as much as a person in that chair.
 
+Engines agree on a handful of phase names so the tables know what to do with
+them without knowing the game: `trickEnd` and `turnEnd` clear themselves after a
+beat, while `roundEnd`, `handEnd`, `gameEnd` and `show` wait for a person to read
+them. Anything else is a decision the seat on turn has to make.
+
 **Adding a game** means writing those two modules plus a table screen, then adding
-an entry to `src/lib/games/registry.js`. Nothing else needs to know about it.
+one entry to `src/lib/games/registry.js` — the shelf, the setup screen with its
+house rules, the rules page and the router all read from there. The server keeps
+its own map of engines in `server/rooms.js` so online play picks it up too.
+
+There is an unlinked card gallery at `#/cards` that renders every card face at
+every size, which is easier than dealing hands until the one you want shows up.
+
+### Two notes on fidelity
+
+The Sequence board is not a copy of the retail layout: it is built the same way in
+spirit — every non-jack card twice, free corners, suits running in a spiral — but
+the arrangement is generated. Backgammon plays without the doubling cube.
 
 ### Quiddler's word list
 
