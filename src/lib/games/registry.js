@@ -29,6 +29,10 @@ import * as sequenceEngine from './sequence/engine.js';
 import * as sequenceBot from './sequence/bot.js';
 import SequenceTable from './sequence/SequenceTable.svelte';
 
+import * as coupEngine from './coup/engine.js';
+import * as coupBot from './coup/bot.js';
+import CoupTable from './coup/CoupTable.svelte';
+
 import * as mastermindEngine from './mastermind/engine.js';
 import * as mastermindBot from './mastermind/bot.js';
 import MastermindTable from './mastermind/MastermindTable.svelte';
@@ -159,6 +163,33 @@ export const GAMES = {
       { title: 'Bearing off', text: 'Once all fifteen of your checkers are home, you can start bearing them off. A die takes a checker off the matching point, or off a lower point if nothing is further back. First side to bear off all fifteen wins.' },
       { title: 'Scoring', text: 'A game is worth 1 point, 2 for a gammon — the loser bore nothing off — and 3 for a backgammon, where the loser still has a checker on the bar or in the winner’s home board. Matches run to the target score.' },
       { title: 'No cube', text: 'This table plays without the doubling cube.' }
+    ]
+  },
+
+  coup: {
+    ...coupEngine.meta,
+    engine: coupEngine, bot: coupBot, component: CoupTable, ready: noop,
+    accent: '#8c2f3f',
+    length: '15–20 min',
+    blurb: 'Two influences, a handful of coins, and a table full of people who may be lying. Claim a card you do not hold — nobody can stop you, unless they call it.',
+    options: [
+      { key: 'set', type: 'select', default: 'classic', label: 'Characters in play',
+        choices: [
+          { value: 'classic', label: 'The classic five' },
+          { value: 'inquisition', label: 'Inquisition — Inquisitor for Ambassador' },
+          { value: 'treasury', label: 'Treasury — Embezzler, best with factions' }
+        ] },
+      { key: 'factions', type: 'toggle', default: false, label: 'Factions',
+        help: 'Everyone takes a side. You cannot hit your own, you can pay to convert, and the last side standing wins together.' }
+    ],
+    rules: [
+      { title: 'What you have', text: 'Two cards face down — your influence — and two coins. Lose both cards and you are out. The last player with a card left wins.' },
+      { title: 'Your turn', text: 'Take income for one coin, ask for foreign aid for two, or pay seven for a coup, which nobody can argue with. At ten coins you must coup.' },
+      { title: 'Or claim a card', text: 'Say you have the Duke and take three in tax. Say you have the Captain and take two coins off someone. Assassin, three coins, and a player loses an influence. Ambassador, and you draw two and keep what you like. You do not have to hold the card to say it.' },
+      { title: 'Calling and blocking', text: 'Anyone may call a claim. Show the card and the caller loses an influence — then you shuffle it away and draw a fresh one. Fail to show it and you lose an influence and the action falls through. The Contessa stops an assassination, the Duke stops foreign aid, and the Captain or Ambassador stops a theft — and every block is itself a claim someone can call.' },
+      { title: 'How the table answers', text: 'On a real table anyone can shout first. Here the question goes round in turn order: each player in turn calls, blocks or lets it go, and the first one to speak up settles it. Surviving a call still leaves the block window open, so a Contessa is good after a bad guess.' },
+      { title: 'Factions', text: 'With factions on, everyone takes a side, and you may not coup, steal from or assassinate your own. Convert costs a coin to cross the floor yourself, two to drag someone else, and that money goes to the treasury reserve — which is what the Embezzler is for. House rule: converting cannot empty a faction, so the game has to be won rather than tidied away for two coins.' },
+      { title: 'About the expansions', text: 'The base game here is the printed one. Choosing which five characters sit in the game is the idea the Rebellion expansion is built on, but the character list is this table’s own — the Inquisitor and the Embezzler are alternates from other Coup sets rather than reproductions of Rebellion cards.' }
     ]
   },
 

@@ -84,7 +84,7 @@
         {#if option.type === 'toggle'}
           <label class="check">
             <input type="checkbox" bind:checked={options[option.key]} />
-            <span>{option.label}{#if option.help} — <span class="muted">{option.help}</span>{/if}</span>
+            <span>{option.label}{option.help ? ' — ' : ''}{#if option.help}<span class="muted">{option.help}</span>{/if}</span>
           </label>
         {:else}
           <label class="check">

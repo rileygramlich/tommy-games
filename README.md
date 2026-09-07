@@ -1,7 +1,7 @@
 # Tommy Games
 
 A small, growing shelf of card and board games that run in a browser, on a phone
-or on a desk. Nine are on it so far:
+or on a desk. Ten are on it so far:
 
 | Game | Players | What it is |
 | --- | --- | --- |
@@ -11,6 +11,7 @@ or on a desk. Nine are on it so far:
 | **Cribbage** | 2 | Peg to thirty-one, then count fifteens all the way to 121 |
 | **Sequence** | 2–3 | Cover the card, build five in a row, mind the jacks |
 | **Backgammon** | 2 | The oldest race there is, played to a match score |
+| **Coup** | 2–6 | Two influences, a pile of coins, and permission to lie |
 | **Mastermind** | 2 | Hide four pegs, or break the other player's in ten |
 | **Reversi** | 2 | Bracket a line and the whole line flips |
 | **Yahtzee** | 1–6 | Five dice, thirteen boxes, no way to fill them all well |
@@ -71,11 +72,21 @@ its own map of engines in `server/rooms.js` so online play picks it up too.
 There is an unlinked card gallery at `#/cards` that renders every card face at
 every size, which is easier than dealing hands until the one you want shows up.
 
-### Two notes on fidelity
+### Notes on fidelity
 
-The Sequence board is not a copy of the retail layout: it is built the same way in
-spirit — every non-jack card twice, free corners, suits running in a spiral — but
-the arrangement is generated. Backgammon plays without the doubling cube.
+Three places where this shelf is not the printed game, all of them flagged in the
+game's own rules page too:
+
+- **Sequence** — the board is not a copy of the retail layout. It is built the
+  same way in spirit (every non-jack card twice, free corners, suits running in a
+  spiral) but the arrangement is generated.
+- **Backgammon** — no doubling cube.
+- **Coup** — the base game is as printed. Responses go round in turn order rather
+  than as a free-for-all race, since nobody can shout across a browser. Choosing
+  which five characters are in play is the idea behind the Rebellion expansion,
+  but the Inquisitor and Embezzler here are alternates from other Coup sets, not
+  reproductions of Rebellion cards. In faction play, conversion cannot be used to
+  empty a faction — otherwise two coins ends the game.
 
 ### Quiddler's word list
 

@@ -12,6 +12,8 @@ import * as sequenceEngine from '../src/lib/games/sequence/engine.js';
 import * as sequenceBot from '../src/lib/games/sequence/bot.js';
 import * as backgammonEngine from '../src/lib/games/backgammon/engine.js';
 import * as backgammonBot from '../src/lib/games/backgammon/bot.js';
+import * as coupEngine from '../src/lib/games/coup/engine.js';
+import * as coupBot from '../src/lib/games/coup/bot.js';
 import * as mastermindEngine from '../src/lib/games/mastermind/engine.js';
 import * as mastermindBot from '../src/lib/games/mastermind/bot.js';
 import * as reversiEngine from '../src/lib/games/reversi/engine.js';
@@ -28,6 +30,7 @@ const ENGINES = {
   cribbage: { engine: cribbageEngine, bot: cribbageBot, ...cribbageEngine.meta },
   sequence: { engine: sequenceEngine, bot: sequenceBot, ...sequenceEngine.meta },
   backgammon: { engine: backgammonEngine, bot: backgammonBot, ...backgammonEngine.meta },
+  coup: { engine: coupEngine, bot: coupBot, ...coupEngine.meta },
   mastermind: { engine: mastermindEngine, bot: mastermindBot, ...mastermindEngine.meta },
   reversi: { engine: reversiEngine, bot: reversiBot, ...reversiEngine.meta },
   yahtzee: { engine: yahtzeeEngine, bot: yahtzeeBot, ...yahtzeeEngine.meta }

@@ -5,6 +5,8 @@
   import LetterCard from '../components/LetterCard.svelte';
   import { buildDeck as wizardDeck } from '../games/wizard/deck.js';
   import { LETTERS } from '../games/quiddler/deck.js';
+  import InfluenceCard from '../games/coup/InfluenceCard.svelte';
+  import { CHARACTER_LIST } from '../games/coup/characters.js';
 
   let { go } = $props();
 
@@ -30,6 +32,17 @@
     <div class="row wrap">
       {#each specials as card (card.id)}<PlayingCard {card} size="sm" />{/each}
       {#each court as card (card.id)}<PlayingCard {card} size="sm" />{/each}
+    </div>
+  </section>
+
+  <section class="stack">
+    <h2>Coup influences</h2>
+    <div class="row wrap">
+      {#each CHARACTER_LIST as character (character.key)}
+        <InfluenceCard character={character.key} />
+      {/each}
+      <InfluenceCard faceDown />
+      <InfluenceCard character="duke" dead />
     </div>
   </section>
 
