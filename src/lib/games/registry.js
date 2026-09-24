@@ -37,6 +37,10 @@ import * as mastermindEngine from './mastermind/engine.js';
 import * as mastermindBot from './mastermind/bot.js';
 import MastermindTable from './mastermind/MastermindTable.svelte';
 
+import * as sudokuEngine from './sudoku/engine.js';
+import * as sudokuBot from './sudoku/bot.js';
+import SudokuTable from './sudoku/SudokuTable.svelte';
+
 import * as backgammonEngine from './backgammon/engine.js';
 import * as backgammonBot from './backgammon/bot.js';
 import BackgammonTable from './backgammon/BackgammonTable.svelte';
@@ -52,14 +56,27 @@ export const GAMES = {
     blurb: 'Every round deals one more card. Predict exactly how many tricks you will take — being right pays, being close does not.',
     options: [
       { key: 'hookRule', type: 'toggle', default: false, label: 'Screw the dealer',
-        help: 'The dealer may not make the bids add up to the tricks available.' }
+        help: 'The dealer may not make the bids add up to the tricks available.' },
+      { key: 'bidding', type: 'select', default: 'open', label: 'Bidding',
+        choices: [
+          { value: 'open', label: 'Open — round the table, called aloud' },
+          { value: 'simultaneous', label: 'All at once — revealed together' },
+          { value: 'concealed', label: 'Concealed — hidden until the round scores' }
+        ] },
+      { key: 'scoring', type: 'select', default: 'classic', label: 'Scoring',
+        choices: [
+          { value: 'classic', label: 'Classic — 20 + 10 a trick, 10 off per miss' },
+          { value: 'simple', label: 'Tight — 10 + your bid, nothing for a miss' }
+        ] }
     ],
     rules: [
       { title: 'The deck', text: 'Sixty cards: a standard fifty-two, plus four Wizards and four Jesters. A Wizard beats everything; a Jester loses to everything.' },
       { title: 'The rounds', text: 'Round one deals one card each, round two deals two, and so on until the deck runs out — twenty rounds with three players, ten with six. After the deal, the next card is turned up to set trump. A Jester means no trump; a Wizard means the dealer calls it.' },
       { title: 'Bidding', text: 'Starting left of the dealer, everyone announces exactly how many tricks they will take. The bids do not have to add up — that is the whole game.' },
+      { title: 'Blind bidding', text: 'Two alternatives in the options. All at once: everyone bids without seeing anyone else, and the moment the last bid is in they are all turned over, so the round is played with every bid known. Concealed: the same blind bid, except nothing is shown until the round is scored — you play the whole hand guessing what the others are chasing. Either way the dealer restriction is off, since nobody can see the totals to be held to them.' },
       { title: 'Playing', text: 'Follow the suit that was led if you can. Wizards and Jesters are always legal. The first Wizard played wins the trick; otherwise the highest trump wins, or the highest card of the led suit. If a Jester leads, the next real card sets the suit.' },
-      { title: 'Scoring', text: 'Hit your bid exactly: 20 points, plus 10 per trick taken. Miss it by any amount: 10 points off for every trick over or under. Highest score after the last round wins.' }
+      { title: 'Scoring', text: 'Hit your bid exactly: 20 points, plus 10 per trick taken. Miss it by any amount: 10 points off for every trick over or under. Highest score after the last round wins.' },
+      { title: 'Tight scoring', text: 'An alternative set in the options. Write down the number of tricks you are going for; hit it exactly and you put a 1 in front of that number — a bid of three pays 13, a bid of zero pays 10. Miss by any amount and you simply score nothing. No penalties and no 20-point bonus, so nobody runs away with it and the bid itself is the whole skill.' }
     ]
   },
 
@@ -76,7 +93,7 @@ export const GAMES = {
     },
     options: [
       { key: 'bonuses', type: 'toggle', default: true, label: 'Round bonuses',
-        help: '10 points each for the longest word and the most words.' },
+        help: '10 points each for the longest word and the most words. A tie cancels that bonus for everyone.' },
       { key: 'rounds', type: 'select', default: 8, label: 'Rounds',
         choices: [{ value: 4, label: '4 (up to 6 cards)' }, { value: 6, label: '6 (up to 8 cards)' }, { value: 8, label: '8 (up to 10 cards)' }] }
     ],
@@ -84,7 +101,7 @@ export const GAMES = {
       { title: 'The deck', text: '118 letter cards. Ten of them carry two letters — cl, er, in, qu, th — and still count as one card. Every card is worth points.' },
       { title: 'The rounds', text: 'Eight rounds. The first deals three cards each, the last deals ten. On your turn, draw one card — from the deck or the top of the discard pile — then discard one.' },
       { title: 'Going out', text: 'When every card left in your hand after discarding can be arranged into words of two letters or more, lay them all down and go out. Everyone else gets one final turn, then lays down whatever they can.' },
-      { title: 'Scoring', text: 'Add up the cards in the words you laid down, then subtract the cards you were left holding. Two bonuses of 10 points each round: the longest word, and the most words.' },
+      { title: 'Scoring', text: 'Add up the cards in the words you laid down, then subtract the cards you were left holding. Two bonuses of 10 points each round: the longest word, and the most words. Each bonus has to be won outright — if two or more players tie for it, nobody is paid.' },
       { title: 'The word list', text: 'This table judges words against a 52,000-word list of ordinary English — no proper nouns, no abbreviations. Two-letter words come from the standard tournament set, so qi, za and xu all play.' }
     ]
   },
@@ -170,6 +187,9 @@ export const GAMES = {
     ...coupEngine.meta,
     engine: coupEngine, bot: coupBot, component: CoupTable, ready: noop,
     accent: '#8c2f3f',
+    // Coup is all bluff and counter-bluff: the table is deliberately unhurried
+    // so you can see who claimed what before deciding whether to believe it.
+    pace: 2.4,
     length: '15–20 min',
     blurb: 'Two influences, a handful of coins, and a table full of people who may be lying. Claim a card you do not hold — nobody can stop you, unless they call it.',
     options: [
@@ -180,7 +200,13 @@ export const GAMES = {
           { value: 'treasury', label: 'Treasury — Embezzler, best with factions' }
         ] },
       { key: 'factions', type: 'toggle', default: false, label: 'Factions',
-        help: 'Everyone takes a side. You cannot hit your own, you can pay to convert, and the last side standing wins together.' }
+        help: 'Everyone takes a side. You cannot hit your own, you can pay to convert, and the last side standing wins together.' },
+      { key: 'challengeSeconds', type: 'select', default: 10, label: 'Time to call a bluff',
+        choices: [
+          { value: 10, label: '10 seconds' },
+          { value: 20, label: '20 seconds — easier going' },
+          { value: 0, label: 'No clock — take as long as you like' }
+        ] }
     ],
     rules: [
       { title: 'What you have', text: 'Two cards face down — your influence — and two coins. Lose both cards and you are out. The last player with a card left wins.' },
@@ -188,6 +214,7 @@ export const GAMES = {
       { title: 'Or claim a card', text: 'Say you have the Duke and take three in tax. Say you have the Captain and take two coins off someone. Assassin, three coins, and a player loses an influence. Ambassador, and you draw two and keep what you like. You do not have to hold the card to say it.' },
       { title: 'Calling and blocking', text: 'Anyone may call a claim. Show the card and the caller loses an influence — then you shuffle it away and draw a fresh one. Fail to show it and you lose an influence and the action falls through. The Contessa stops an assassination, the Duke stops foreign aid, and the Captain or Ambassador stops a theft — and every block is itself a claim someone can call.' },
       { title: 'How the table answers', text: 'On a real table anyone can shout first. Here the question goes round in turn order: each player in turn calls, blocks or lets it go, and the first one to speak up settles it. Surviving a call still leaves the block window open, so a Contessa is good after a bad guess.' },
+      { title: 'The clock', text: 'When it is your turn to answer, a countdown runs — ten seconds by default, and you can set twenty or turn it off in the options. Letting it run out is the same as letting the claim go. The rest of the table is deliberately slow-paced so you can watch a claim land before deciding whether you believe it.' },
       { title: 'Factions', text: 'With factions on, everyone takes a side, and you may not coup, steal from or assassinate your own. Convert costs a coin to cross the floor yourself, two to drag someone else, and that money goes to the treasury reserve — which is what the Embezzler is for. House rule: converting cannot empty a faction, so the game has to be won rather than tidied away for two coins.' },
       { title: 'About the expansions', text: 'The base game here is the printed one. Choosing which five characters sit in the game is the idea the Rebellion expansion is built on, but the character list is this table’s own — the Inquisitor and the Embezzler are alternates from other Coup sets rather than reproductions of Rebellion cards.' }
     ]
@@ -232,6 +259,29 @@ export const GAMES = {
       { title: 'Your move', text: 'Place a disc so that one or more straight lines of your opponent’s discs sit between it and another of yours. Every disc in those lines flips to your colour. If you cannot flip anything, you must pass.' },
       { title: 'The corners', text: 'A disc in a corner can never be flipped, which is why the squares beside a corner are the most dangerous ones on the board.' },
       { title: 'Winning', text: 'The game ends when neither side can move — usually when the board is full. Most discs wins.' }
+    ]
+  },
+
+  sudoku: {
+    ...sudokuEngine.meta,
+    engine: sudokuEngine, bot: sudokuBot, component: SudokuTable, ready: noop,
+    accent: '#2f6f9f',
+    length: '10–30 min',
+    blurb: 'One grid, on your own, with no lives and no clock. Put a wrong number in and nothing happens except that it sits there looking wrong.',
+    options: [
+      { key: 'difficulty', type: 'select', default: 'easy', label: 'Difficulty',
+        choices: [
+          { value: 'easy', label: 'Easy — plenty to go on' },
+          { value: 'medium', label: 'Medium' },
+          { value: 'hard', label: 'Hard — very little given' }
+        ] }
+    ],
+    rules: [
+      { title: 'The grid', text: 'Nine rows, nine columns and nine boxes of nine. Fill every square so that each row, each column and each three-by-three box holds one through nine, once each.' },
+      { title: 'No lives', text: 'Nothing here can fail you. Write in a wrong number and it simply sits there; squares that clash with one another turn red so you can see where it went wrong. The grid waits until every square is right.' },
+      { title: 'Pencil marks', text: 'Turn pencil marks on and the numbers you tap go in small, several to a square, the way you would note candidates on paper. Writing a real number in clears them.' },
+      { title: 'Getting around', text: 'Tap a square and then a number, or use the arrow keys and type. Tapping the number already in a square rubs it out. The keypad shows how many of each number are still to be placed.' },
+      { title: 'The puzzles', text: 'Every grid is generated when you start, and numbers are taken away only while exactly one solution survives — so there is always precisely one right answer, and it can always be reasoned out.' }
     ]
   },
 

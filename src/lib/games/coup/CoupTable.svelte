@@ -19,6 +19,33 @@
     if (signature !== lastSignature) { lastSignature = signature; armed = null; keeping = []; }
   });
 
+  // The challenge clock. While the table is waiting on you, a countdown runs so
+  // play keeps moving; letting it expire is the same as letting the claim go.
+  // Keyed on the window itself, so ordinary log chatter does not restart it.
+  let remaining = $state(0);
+  const clockLength = $derived(v?.challengeSeconds ?? 0);
+  const windowKey = $derived(
+    myResponse.length && v?.pending
+      ? `${v.pending.actor}:${v.pending.action}:${v.pending.stage}:${v.pending.blocker}`
+      : ''
+  );
+
+  $effect(() => {
+    if (!windowKey || !clockLength) { remaining = 0; return; }
+    const seconds = clockLength;
+    const startedAt = Date.now();
+    remaining = seconds;
+    const id = setInterval(() => {
+      const left = seconds - (Date.now() - startedAt) / 1000;
+      remaining = Math.max(0, left);
+      if (left > 0) return;
+      clearInterval(id);
+      // Only pass if the table is still waiting on this seat.
+      if (table.view?.myResponses?.length) table.send({ type: 'allow' });
+    }, 100);
+    return () => clearInterval(id);
+  });
+
   // One button per action; targets are picked afterwards.
   const actionKeys = $derived([...new Set((v?.actions ?? []).map((a) => a.action))]);
   const targetsFor = (key) => (v.actions.filter((a) => a.action === key && a.target != null).map((a) => a.target));
@@ -136,6 +163,17 @@
         </div>
       {:else if v.phase === 'action'}
         <div class="empty muted">{myTurn ? 'Say something.' : 'Watching.'}</div>
+      {/if}
+
+      {#if myResponse.length && clockLength}
+        <div class="clock" aria-hidden="true">
+          <div class="clock-track">
+            <div class="clock-bar" class:urgent={remaining <= 3} style={`width:${(remaining / clockLength) * 100}%`}></div>
+          </div>
+          <div class="tiny muted clock-text">
+            {Math.ceil(remaining)}s to decide — running out lets it go
+          </div>
+        </div>
       {/if}
 
       {#if myResponse.length}
@@ -288,6 +326,15 @@
   .claim-text { font-family: var(--serif); font-size: 1rem; max-width: 24rem; }
   .empty { opacity: 0.5; font-size: 0.85rem; }
   .responses { justify-content: center; }
+  .clock { display: grid; gap: 0.25rem; justify-items: center; width: min(320px, 100%); }
+  .clock-track {
+    width: 100%; height: 7px; border-radius: 4px;
+    background: color-mix(in srgb, var(--ink) 18%, transparent);
+    overflow: hidden;
+  }
+  .clock-bar { height: 100%; background: var(--brass); transition: width 0.12s linear; }
+  .clock-bar.urgent { background: var(--rose); }
+  .clock-text { letter-spacing: 0.02em; }
   .prompt { display: grid; gap: 0.5rem; justify-items: center; }
   .thinking { position: absolute; bottom: 0.5rem; right: 0.8rem; opacity: 0.6; font-style: italic; }
 

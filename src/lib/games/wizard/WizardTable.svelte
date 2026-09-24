@@ -9,7 +9,12 @@
 
   const v = $derived(table.view);
   const me = $derived(v ? v.players[v.seat] : null);
-  const myTurn = $derived(!!v && v.turn === v.seat && ['bidding', 'playing', 'chooseTrump'].includes(v.phase));
+  // With blind bidding there is no "turn" to wait for: you bid when ready.
+  const myTurn = $derived(!!v && (
+    (v.phase === 'bidding' && v.canBid) ||
+    (v.turn === v.seat && ['playing', 'chooseTrump'].includes(v.phase))
+  ));
+  const openBidding = $derived(v?.bidding === 'open');
   const others = $derived(v ? v.players.filter((p) => p.seat !== v.seat) : []);
   const bidTotal = $derived(v ? v.players.reduce((sum, p) => sum + (p.bid ?? 0), 0) : 0);
   const shownTrick = $derived(v && v.phase === 'trickEnd' && v.lastTrick ? v.lastTrick.plays : (v?.trick ?? []));
@@ -19,7 +24,14 @@
     if (!v) return '';
     if (v.phase === 'gameOver') return 'Game over';
     if (v.phase === 'chooseTrump') return v.turn === v.seat ? 'A Wizard turned up — call the trump suit' : `${v.players[v.turn].name} is calling trump`;
-    if (v.phase === 'bidding') return v.turn === v.seat ? 'How many tricks will you take?' : `${v.players[v.turn].name} is bidding`;
+    if (v.phase === 'bidding') {
+      if (v.canBid) return 'How many tricks will you take?';
+      if (!openBidding) {
+        const left = v.players.length - v.bidsIn;
+        return left > 0 ? `Waiting on ${left} more ${left === 1 ? 'bid' : 'bids'}` : 'Bids are in';
+      }
+      return `${v.players[v.turn].name} is bidding`;
+    }
     if (v.phase === 'trickEnd') return `${v.players[v.lastTrick.winner].name} takes the trick`;
     if (v.phase === 'roundEnd') return `Round ${v.round} scored`;
     if (v.turn !== v.seat) return `${v.players[v.turn].name} to play`;
@@ -29,9 +41,13 @@
 
   function seatDetail(p) {
     if (v.phase === 'bidding' || v.phase === 'chooseTrump') {
-      return p.bid == null ? `${p.cards} cards` : `bid ${p.bid}`;
+      if (p.bid != null) return `bid ${p.bid}`;
+      return p.hasBid ? 'bid in' : `${p.cards} cards`;
     }
-    return `${p.tricks}/${p.bid ?? '–'} tricks · ${p.score} pts`;
+    // A concealed bid shows as a question mark rather than an em dash: it exists,
+    // you just are not allowed to know it.
+    const bid = p.bid != null ? p.bid : p.hasBid ? '?' : '–';
+    return `${p.tricks}/${bid} tricks · ${p.score} pts`;
   }
 </script>
 
@@ -75,9 +91,15 @@
     <section class="felt board">
       {#if v.phase === 'bidding' || v.phase === 'chooseTrump'}
         <div class="bid-summary fade-in">
-          <div class="tiny muted">Bids so far</div>
-          <div class="bid-total num">{bidTotal} <span class="muted">/ {v.round} tricks</span></div>
-          {#if v.hookRule}<div class="tiny muted">Dealer may not make it even</div>{/if}
+          {#if openBidding}
+            <div class="tiny muted">Bids so far</div>
+            <div class="bid-total num">{bidTotal} <span class="muted">/ {v.round} tricks</span></div>
+          {:else}
+            <div class="tiny muted">{v.bidding === 'concealed' ? 'Concealed bids' : 'Bidding all at once'}</div>
+            <div class="bid-total num">{v.bidsIn} <span class="muted">/ {v.players.length} in</span></div>
+          {/if}
+          {#if v.hookRule && openBidding}<div class="tiny muted">Dealer may not make it even</div>{/if}
+          {#if v.scoring === 'simple'}<div class="tiny muted">Tight scoring — 10 + your bid, nothing for a miss</div>{/if}
         </div>
       {/if}
 
@@ -119,9 +141,11 @@
         </div>
       {/if}
 
-      {#if v.phase === 'bidding' && myTurn}
+      {#if v.phase === 'bidding' && v.canBid}
         <div class="row wrap actions">
-          <span class="muted tiny">Your bid:</span>
+          <span class="muted tiny">
+            {openBidding ? 'Your bid:' : v.bidding === 'concealed' ? 'Your bid (nobody sees it):' : 'Your bid (blind):'}
+          </span>
           {#each Array.from({ length: v.round + 1 }, (_, i) => i) as n (n)}
             <button class="btn small" disabled={!v.legalBids.includes(n)} onclick={() => table.send({ type: 'bid', bid: n })}>{n}</button>
           {/each}

@@ -145,6 +145,68 @@ test('scoring counts words up, leftovers down, and pays both bonuses', () => {
   assert.equal(rows[1].delta, 13, 'the discarded z does not count against you');
 });
 
+test('a tie for the longest word, or for the most words, cancels that bonus', () => {
+  const state = E.createGame({ players: players(2), seed: 12 });
+  state.phase = 'discard';
+  state.turn = 0;
+
+  // Both players lay one three-letter word, so neither bonus is won outright.
+  state.hands[0] = hand(['c', 8], ['a', 2], ['t', 3], ['v', 11]);
+  const first = state.hands[0].map((c) => c.id);
+  let result = E.applyMove(state, 0, {
+    type: 'discard',
+    cardId: first[3],
+    layout: { words: [first.slice(0, 3)] }
+  });
+  assert.ok(result.ok, result.error);
+
+  state.hands[1] = hand(['b', 8], ['a', 2], ['t', 3], ['v', 11]);
+  state.phase = 'discard';
+  const second = state.hands[1].map((c) => c.id);
+  result = E.applyMove(state, 1, {
+    type: 'discard',
+    cardId: second[3],
+    layout: { words: [second.slice(0, 3)] }
+  });
+  assert.ok(result.ok, result.error);
+
+  const rows = state.roundSummary.rows;
+  assert.equal(rows[0].bonus, 0, 'longest word tied at three letters');
+  assert.equal(rows[1].bonus, 0, 'most words tied at one each');
+  assert.equal(rows[0].delta, 13);
+  assert.equal(rows[1].delta, 13);
+});
+
+test('a bonus still pays when one player wins it outright', () => {
+  const state = E.createGame({ players: players(2), seed: 12 });
+  state.phase = 'discard';
+  state.turn = 0;
+
+  // QUIZ is four letters against CAT's three, and it is the only such word.
+  state.hands[0] = hand(['q', 15], ['u', 4], ['i', 2], ['z', 14], ['v', 11]);
+  const first = state.hands[0].map((c) => c.id);
+  let result = E.applyMove(state, 0, {
+    type: 'discard',
+    cardId: first[4],
+    layout: { words: [first.slice(0, 4)] }
+  });
+  assert.ok(result.ok, result.error);
+
+  state.hands[1] = hand(['c', 8], ['a', 2], ['t', 3], ['v', 11]);
+  state.phase = 'discard';
+  const second = state.hands[1].map((c) => c.id);
+  result = E.applyMove(state, 1, {
+    type: 'discard',
+    cardId: second[3],
+    layout: { words: [second.slice(0, 3)] }
+  });
+  assert.ok(result.ok, result.error);
+
+  const rows = state.roundSummary.rows;
+  assert.equal(rows[0].bonus, 10, 'longest word won outright; most words is tied at one');
+  assert.equal(rows[1].bonus, 0);
+});
+
 test('bots play 8 legal games start to finish', () => {
   for (let g = 0; g < 8; g++) {
     const n = 2 + (g % 4);

@@ -20,6 +20,7 @@
   let options = $state(defaultOptions(game));
 
   const fixedSeats = $derived(game.minPlayers === game.maxPlayers);
+  const solitaire = $derived(game.maxPlayers === 1);
   const humans = $derived(seats.filter((s) => !s.isBot).length);
 
   function addSeat() {
@@ -48,13 +49,17 @@
   </div>
 
   <p class="muted">
-    {#if fixedSeats}
-      {game.name} takes exactly {game.minPlayers} players.
+    {#if solitaire}
+      {game.name} is played on your own.
     {:else}
-      {game.minPlayers}–{game.maxPlayers} seats.
+      {#if fixedSeats}
+        {game.name} takes exactly {game.minPlayers} players.
+      {:else}
+        {game.minPlayers}–{game.maxPlayers} seats.
+      {/if}
+      Mark a seat as a bot to play against the house, or leave several as people and pass the
+      device around — hands stay hidden between turns.
     {/if}
-    Mark a seat as a bot to play against the house, or leave several as people and pass the
-    device around — hands stay hidden between turns.
   </p>
 
   <div class="panel stack">

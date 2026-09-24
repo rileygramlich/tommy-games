@@ -28,6 +28,14 @@ export function createGame({ players, options = {}, seed = 1 }) {
     options: {
       // "Screw the dealer": the dealer may not make the bids total the trick count.
       hookRule: !!options.hookRule,
+      // 'classic' is the printed game. 'simple' pays 10 + your bid for hitting it
+      // exactly and nothing at all for missing — no penalties, so the table stays
+      // close and the bid itself is the whole skill.
+      scoring: options.scoring === 'simple' ? 'simple' : 'classic',
+      // How bids are taken. 'open' is the printed game: round the table, each
+      // one called aloud. 'simultaneous' has everyone bid blind and then shows
+      // every bid at once. 'concealed' never shows them until the round scores.
+      bidding: ['simultaneous', 'concealed'].includes(options.bidding) ? options.bidding : 'open',
       rounds: options.rounds ?? roundCount(n)
     },
     round: 0,
@@ -113,7 +121,7 @@ export function legalMoves(state, seat) {
   if (state.phase === 'chooseTrump' && seat === state.turn) {
     return SUITS.map((suit) => ({ type: 'chooseTrump', suit }));
   }
-  if (state.phase === 'bidding' && seat === state.turn) {
+  if (canBid(state, seat)) {
     const moves = [];
     for (let bid = 0; bid <= state.round; bid++) {
       if (!forbiddenBid(state, seat, bid)) moves.push({ type: 'bid', bid });
@@ -127,8 +135,19 @@ export function legalMoves(state, seat) {
   return [];
 }
 
+/** May this seat put a bid in right now? */
+export function canBid(state, seat) {
+  if (state.phase !== 'bidding' || seat == null) return false;
+  if (seat < 0 || seat >= state.players.length) return false;
+  // Bidding blind means nobody waits for a turn — you bid when you are ready.
+  if (state.options.bidding === 'open') return seat === state.turn;
+  return state.bids[seat] === null;
+}
+
 function forbiddenBid(state, seat, bid) {
   if (!state.options.hookRule) return false;
+  // The dealer can only be held to it when the other bids are on the table.
+  if (state.options.bidding !== 'open') return false;
   if (seat !== state.dealer) return false;
   const placed = state.bids.reduce((sum, b) => sum + (b ?? 0), 0);
   return placed + bid === state.round;
@@ -160,17 +179,27 @@ export function applyMove(state, seat, move) {
   }
 
   if (move.type === 'bid') {
-    if (state.phase !== 'bidding' || seat !== state.turn) return fail('Not your bid.');
+    if (state.phase !== 'bidding') return fail('Nothing to bid on.');
+    if (!canBid(state, seat)) {
+      return fail(state.options.bidding === 'open' ? 'Not your bid.' : 'You have already bid.');
+    }
     const bid = Number(move.bid);
     if (!Number.isInteger(bid) || bid < 0 || bid > state.round) return fail('Bid out of range.');
     if (forbiddenBid(state, seat, bid)) return fail('The dealer may not make the bids add up.');
     state.bids[seat] = bid;
-    log(state, `${state.players[seat].name} bids ${bid}.`);
+    const open = state.options.bidding === 'open';
+    // A blind bid is announced, never quoted — the number stays this seat's own.
+    log(state, open ? `${state.players[seat].name} bids ${bid}.` : `${state.players[seat].name} has bid.`);
     const n = state.players.length;
     if (state.bids.every((b) => b !== null)) {
       state.phase = 'playing';
       state.turn = state.leader;
-    } else {
+      if (state.options.bidding === 'simultaneous') {
+        log(state, `Bids are in — ${state.players.map((p, i) => `${p.name} ${state.bids[i]}`).join(', ')}.`);
+      } else if (state.options.bidding === 'concealed') {
+        log(state, 'Every bid is in, and nobody is saying what it was.');
+      }
+    } else if (open) {
       state.turn = (seat + 1) % n;
     }
     return { ok: true };
@@ -253,12 +282,17 @@ export function trickWinner(trick, trumpSuit) {
 }
 
 function scoreRound(state) {
+  const simple = state.options.scoring === 'simple';
   const deltas = state.players.map((_, i) => {
     const bid = state.bids[i];
     const won = state.tricksWon[i];
+    if (simple) return bid === won ? 10 + bid : 0;
     return bid === won ? 20 + 10 * won : -10 * Math.abs(won - bid);
   });
   deltas.forEach((d, i) => { state.scores[i] += d; });
+  if (state.options.bidding === 'concealed') {
+    log(state, `Bids were ${state.players.map((p, i) => `${p.name} ${state.bids[i]}`).join(', ')}.`);
+  }
   state.scoreboard.push({
     round: state.round,
     bids: state.bids.slice(),
@@ -272,6 +306,17 @@ function scoreRound(state) {
 
 // ---------------------------------------------------------------- seat view
 
+/** Whether `viewer` is allowed to see what seat `i` bid. Your own is always yours. */
+function bidVisible(state, viewer, i) {
+  if (viewer != null && i === viewer) return true;
+  const mode = state.options.bidding;
+  if (mode === 'open') return true;
+  if (state.phase === 'bidding') return false;
+  if (mode === 'simultaneous') return true;
+  // Concealed: the numbers only come out when the round is scored.
+  return state.phase === 'roundEnd' || state.phase === 'gameOver';
+}
+
 // What one seat is allowed to know. Other hands become counts.
 export function view(state, seat) {
   return {
@@ -281,6 +326,10 @@ export function view(state, seat) {
     round: state.round,
     rounds: state.options.rounds,
     hookRule: state.options.hookRule,
+    scoring: state.options.scoring,
+    bidding: state.options.bidding,
+    canBid: canBid(state, seat),
+    bidsIn: state.bids.filter((b) => b !== null).length,
     dealer: state.dealer,
     turn: state.turn,
     leader: state.leader,
@@ -289,7 +338,8 @@ export function view(state, seat) {
       name: p.name,
       isBot: p.isBot,
       cards: state.hands[i].length,
-      bid: state.bids[i],
+      bid: bidVisible(state, seat, i) ? state.bids[i] : null,
+      hasBid: state.bids[i] !== null,
       tricks: state.tricksWon[i],
       score: state.scores[i]
     })),
@@ -297,9 +347,7 @@ export function view(state, seat) {
     playable: seat != null && state.phase === 'playing' && state.turn === seat
       ? playableCards(state, seat).map((c) => c.id)
       : [],
-    legalBids: seat != null && state.phase === 'bidding' && state.turn === seat
-      ? legalMoves(state, seat).map((m) => m.bid)
-      : [],
+    legalBids: canBid(state, seat) ? legalMoves(state, seat).map((m) => m.bid) : [],
     trick: state.trick.map((p) => ({ seat: p.seat, card: p.card })),
     ledSuit: state.ledSuit,
     trumpCard: state.trumpCard,
@@ -318,6 +366,11 @@ export function isOver(state) {
 // Seats whose move the table is waiting on (used to drive bots / prompts).
 export function activeSeats(state) {
   if (state.phase === 'trickEnd' || state.phase === 'roundEnd') return [state.turn];
-  if (['bidding', 'playing', 'chooseTrump'].includes(state.phase)) return [state.turn];
+  if (state.phase === 'bidding') {
+    if (state.options.bidding === 'open') return [state.turn];
+    // Blind bidding: everyone who has not bid yet is holding the table up.
+    return state.players.map((_, i) => i).filter((i) => state.bids[i] === null);
+  }
+  if (['playing', 'chooseTrump'].includes(state.phase)) return [state.turn];
   return [];
 }

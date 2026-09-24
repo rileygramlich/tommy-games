@@ -1,5 +1,6 @@
 <script>
   import { CHARACTERS } from './characters.js';
+  import CharacterFace from './CharacterFace.svelte';
   let {
     character = null,
     size = 'md',
@@ -27,7 +28,7 @@
   {#if faceDown || !spec}
     <span class="weave" aria-hidden="true"></span>
   {:else}
-    <span class="glyph" aria-hidden="true">{spec.glyph}</span>
+    <span class="portrait"><CharacterFace character={spec.key} /></span>
     <span class="name">{spec.name}</span>
   {/if}
 </svelte:element>
@@ -65,8 +66,9 @@
   .inf.dimmed { filter: grayscale(0.5) brightness(0.9); opacity: 0.7; }
   .inf.dead { filter: grayscale(0.85); opacity: 0.55; transform: rotate(-3deg); }
 
-  .glyph { font-size: 1.5rem; line-height: 1; margin-top: 6px; }
-  .sm .glyph { font-size: 1.05rem; }
+  .portrait { display: block; width: 72%; margin-top: 7px; }
+  .sm .portrait { width: 78%; margin-top: 4px; }
+  .lg .portrait { width: 70%; margin-top: 9px; }
   .name {
     /* "Ambassador" has to fit the same card as "Duke". */
     font-size: 0.5rem; letter-spacing: 0.01em; text-transform: uppercase;

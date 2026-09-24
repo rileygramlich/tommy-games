@@ -80,11 +80,14 @@ export class LocalTable {
     const active = this.#activeSeat();
     if (active == null) return;
     const phase = this.#state.phase;
+    // Some games are meant to be followed rather than rattled through: a game
+    // may ask for a slower table, and every pause here stretches to match.
+    const pace = this.#game.pace ?? 1;
 
     // Beats that clear themselves after a moment: a finished trick, a played-out
     // backgammon turn. Long enough to see what happened.
     if (AUTO_PHASES.has(phase)) {
-      this.#timer = setTimeout(() => { this.continue_(); }, Math.max(900, botDelay() * 1.6));
+      this.#timer = setTimeout(() => { this.continue_(); }, Math.max(900, botDelay() * 1.6) * pace);
       return;
     }
     // Summaries wait for someone to read them, unless the table is all bots.
@@ -107,7 +110,7 @@ export class LocalTable {
       }
       this.#sync();
       this.#schedule();
-    }, botDelay());
+    }, botDelay() * pace);
   }
 
   destroy() { clearTimeout(this.#timer); }

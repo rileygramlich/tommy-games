@@ -226,11 +226,17 @@ function scoreRound(state) {
   const bonuses = Array(n).fill(0);
 
   if (state.options.bonuses) {
-    const longest = Math.max(0, ...laid.map((l) => Math.max(0, ...l.words.map((w) => w.word.length))));
-    const most = Math.max(0, ...laid.map((l) => l.words.length));
+    // A bonus is for beating the table outright: if two or more players tie for
+    // the longest word, or for the most words, that bonus is not paid at all.
+    const longestPer = laid.map((l) => Math.max(0, ...l.words.map((w) => w.word.length)));
+    const mostPer = laid.map((l) => l.words.length);
+    const longest = Math.max(0, ...longestPer);
+    const most = Math.max(0, ...mostPer);
+    const longestTied = longestPer.filter((len) => len === longest).length > 1;
+    const mostTied = mostPer.filter((count) => count === most).length > 1;
     for (let i = 0; i < n; i++) {
-      if (longest > 0 && laid[i].words.some((w) => w.word.length === longest)) bonuses[i] += 10;
-      if (most > 0 && laid[i].words.length === most) bonuses[i] += 10;
+      if (longest > 0 && !longestTied && longestPer[i] === longest) bonuses[i] += 10;
+      if (most > 0 && !mostTied && mostPer[i] === most) bonuses[i] += 10;
     }
   }
 

@@ -42,6 +42,10 @@ export function createGame({ players, options = {}, seed = 1 }) {
       set: set.key,
       characters,
       factions: !!options.factions,
+      // Seconds a player gets to call a bluff before the table moves on without
+      // them. The clock itself is drawn by the table; the engine only carries
+      // the setting so every seat agrees on the length. Zero means no clock.
+      challengeSeconds: options.challengeSeconds == null ? 10 : Math.max(0, Number(options.challengeSeconds) || 0),
       copies
     },
     deck,
@@ -538,6 +542,7 @@ export function view(state, seat) {
     copies: state.options.copies,
     factions: state.options.factions,
     factionNames: FACTIONS,
+    challengeSeconds: state.options.challengeSeconds,
     reserve: state.reserve,
     deckSize: state.deck.length,
     players: state.players.map((pl, i) => ({

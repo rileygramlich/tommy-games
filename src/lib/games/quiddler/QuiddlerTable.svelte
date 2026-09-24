@@ -319,8 +319,8 @@
   .table-shell { display: grid; gap: 0.9rem; }
   .top { align-items: flex-start; }
   .round { font-family: var(--serif); font-size: 1.15rem; }
-  .status { font-size: 0.85rem; color: var(--ink-soft); }
-  .tiny { font-size: 0.75rem; }
+  .status { font-size: 1rem; color: var(--ink-soft); }
+  .tiny { font-size: 0.85rem; }
   .err { color: var(--rose); }
 
   .piles { display: flex; gap: 0.5rem; }
@@ -342,19 +342,19 @@
 
   .slot {
     display: grid; place-items: center;
-    min-width: 84px; min-height: 100px;
+    min-width: 108px; min-height: 130px;
     border: 1px dashed color-mix(in srgb, #f0e6d2 40%, transparent);
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, black 12%, transparent);
     color: inherit; cursor: pointer;
   }
   .slot.armed, .wordrow.armed { border-color: var(--brass-soft); background: color-mix(in srgb, var(--brass) 14%, transparent); }
-  .placeholder { font-size: 0.72rem; opacity: 0.55; padding: 0 0.6rem; }
+  .placeholder { font-size: 0.92rem; opacity: 0.7; padding: 0 0.6rem; }
 
   .words { display: grid; gap: 0.4rem; }
   .wordrow {
     display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-    min-height: 44px; padding: 0.35rem 0.6rem;
+    min-height: 60px; padding: 0.5rem 0.7rem;
     border: 1px dashed color-mix(in srgb, #f0e6d2 34%, transparent);
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, black 12%, transparent);
@@ -364,17 +364,18 @@
   .wordrow.invalid, .wordrow.short { border-style: solid; border-color: color-mix(in srgb, var(--rose) 70%, white 10%); }
   .wordcards { display: flex; gap: 0.25rem; flex-wrap: wrap; }
   .chip {
-    display: inline-block; padding: 0.15em 0.45em; border-radius: 6px;
-    background: var(--card-face); color: #23201c; font-family: var(--serif); font-size: 0.85rem;
+    display: inline-block; padding: 0.25em 0.55em; border-radius: 7px;
+    background: var(--card-face); color: #23201c; font-family: var(--serif);
+    font-size: 1.25rem; font-weight: 600;
   }
   .chip:hover { background: color-mix(in srgb, var(--rose) 30%, var(--card-face)); }
-  .wordtext { font-family: var(--serif); font-size: 0.9rem; opacity: 0.85; }
+  .wordtext { font-family: var(--serif); font-size: 1.15rem; opacity: 0.9; }
 
   .thinking { position: absolute; bottom: 0.6rem; right: 0.9rem; opacity: 0.6; font-style: italic; }
 
   .you { display: grid; gap: 0.6rem; }
   .you-head { align-items: baseline; }
-  .hand { display: flex; gap: 0.4rem; flex-wrap: wrap; min-height: 100px; align-items: flex-end; }
+  .hand { display: flex; gap: 0.55rem; flex-wrap: wrap; min-height: 128px; align-items: flex-end; }
   .actions { gap: 0.4rem; }
 
   .log-panel summary { cursor: pointer; font-size: 0.85rem; color: var(--ink-soft); }
