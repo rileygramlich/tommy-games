@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { loadStore } from './store.js';
+import { loadStore, flush } from './store.js';
 import { register, login, resume, revoke, publicUser } from './auth.js';
 import { createDictionary } from '../src/lib/games/quiddler/dictionary.js';
 import * as quiddlerEngine from '../src/lib/games/quiddler/engine.js';
@@ -17,6 +17,32 @@ import {
 const here = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT ?? 8787);
 const ALLOWED = (process.env.ALLOWED_ORIGINS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+// Facing the open internet, three things need a ceiling: how hard one address
+// may guess at passwords, how many tables may exist at once, and how large a
+// single message may be.
+const AUTH_ATTEMPTS = Number(process.env.AUTH_ATTEMPTS ?? 20);
+const AUTH_WINDOW = Number(process.env.AUTH_WINDOW ?? 60000);
+const MAX_ROOMS = Number(process.env.MAX_ROOMS ?? 200);
+const MAX_PAYLOAD = Number(process.env.MAX_PAYLOAD ?? 64 * 1024);
+
+const attempts = new Map(); // address -> { count, until }
+
+function tooManyAttempts(address) {
+  const now = Date.now();
+  const entry = attempts.get(address);
+  if (!entry || now > entry.until) {
+    attempts.set(address, { count: 1, until: now + AUTH_WINDOW });
+    return false;
+  }
+  entry.count += 1;
+  return entry.count > AUTH_ATTEMPTS;
+}
+
+// Keep the table from growing without bound on a long-lived server.
+setInterval(() => {
+  const now = Date.now();
+  for (const [address, entry] of attempts) if (now > entry.until) attempts.delete(address);
+}, AUTH_WINDOW).unref();
 
 loadStore();
 try {
@@ -40,6 +66,7 @@ const http = createServer((req, res) => {
 
 const wss = new WebSocketServer({
   server: http,
+  maxPayload: MAX_PAYLOAD,
   verifyClient: ({ origin }) => !ALLOWED.length || !origin || ALLOWED.includes(origin)
 });
 
@@ -76,8 +103,11 @@ function enterSession(ws, { user, token }) {
   send(ws, { type: 'lobby', rooms: listRooms() });
 }
 
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, request) => {
   clients.add(ws);
+  ws.address = request?.headers['x-forwarded-for']?.split(',')[0].trim()
+    ?? request?.socket?.remoteAddress
+    ?? 'unknown';
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
   send(ws, { type: 'welcome', server: 'tommy-games', games: Object.keys(ENGINES) });
@@ -87,6 +117,10 @@ wss.on('connection', (ws) => {
     try { msg = JSON.parse(raw); } catch { return fail(ws, 'Malformed message.'); }
 
     try {
+      if (['register', 'login', 'auth'].includes(msg.type) && tooManyAttempts(ws.address)) {
+        return fail(ws, 'Too many attempts. Wait a minute and try again.');
+      }
+
       switch (msg.type) {
         case 'register': {
           const result = register(msg.username, msg.password);
@@ -119,6 +153,7 @@ wss.on('connection', (ws) => {
           return send(ws, { type: 'lobby', rooms: listRooms() });
 
         case 'createRoom': {
+          if (rooms.size >= MAX_ROOMS) return fail(ws, 'This server is full. Try again shortly.');
           const room = createRoom({ game: msg.game, name: msg.name, user: ws.user, options: msg.options });
           ws.roomId = room.id;
           return roomBroadcast(room);
@@ -218,3 +253,15 @@ http.listen(PORT, () => {
   console.log(`Tommy Games server on :${PORT}`);
   if (ALLOWED.length) console.log(`allowed origins: ${ALLOWED.join(', ')}`);
 });
+
+// Hosts stop a container by asking politely first. Write the accounts out and
+// close the sockets rather than being killed mid-write.
+for (const signal of ['SIGTERM', 'SIGINT']) {
+  process.on(signal, () => {
+    console.log(`${signal} — closing down.`);
+    flush();
+    for (const ws of clients) ws.close(1001, 'Server restarting');
+    http.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 3000).unref();
+  });
+}

@@ -16,11 +16,40 @@
   let newName = $state('');
   let joinCode = $state('');
   let chatText = $state('');
+  let copied = $state(false);
+
+  // A table code can arrive in the link itself: #/online?table=AB12. Whoever
+  // opens it signs in and lands at the table without typing anything.
+  let pendingCode = $state('');
 
   onMount(() => {
+    const hash = window.location.hash ?? '';
+    const query = hash.includes('?') ? new URLSearchParams(hash.slice(hash.indexOf('?') + 1)) : null;
+    pendingCode = (query?.get('table') ?? '').trim().toUpperCase();
     if (settings.serverUrl) online.connect(settings.serverUrl);
   });
   onDestroy(() => online.close());
+
+  $effect(() => {
+    if (!pendingCode || !online.user || online.room) return;
+    const code = pendingCode;
+    pendingCode = '';
+    online.joinRoom(code);
+  });
+
+  function inviteLink(code) {
+    return `${window.location.origin}${window.location.pathname}#/online?table=${code}`;
+  }
+
+  async function copyInvite() {
+    try {
+      await navigator.clipboard.writeText(inviteLink(room.id));
+      copied = true;
+      setTimeout(() => (copied = false), 1800);
+    } catch {
+      copied = false;
+    }
+  }
 
   // Quiddler needs its word list in the browser too, for live word checking.
   // Some games need to load something before they can render — Quiddler's word list.
@@ -104,8 +133,14 @@
           <h2>{room.name}</h2>
           <div class="muted tiny">{room.gameName} · table code <strong class="code">{room.id}</strong></div>
         </div>
-        <button class="btn ghost small" onclick={() => online.leaveRoom()}>Leave</button>
+        <div class="row">
+          <button class="btn small" onclick={copyInvite}>{copied ? 'Link copied' : 'Copy invite link'}</button>
+          <button class="btn ghost small" onclick={() => online.leaveRoom()}>Leave</button>
+        </div>
       </div>
+      <p class="muted tiny">
+        Anyone on any network can join with the code above, or by opening the invite link.
+      </p>
 
       <div class="seats">
         {#each room.seats as seat (seat.userId)}

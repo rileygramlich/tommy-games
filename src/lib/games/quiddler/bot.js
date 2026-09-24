@@ -40,11 +40,6 @@ export function chooseMove(v, rng = Math.random, dict = null) {
   return { type: 'continue' };
 }
 
-/** The same plan the bot would make: which card to pitch and how to lay out the rest. */
-export function planTurn(cards, dict) {
-  return bestDiscardValue(cards, dict, cards.length - 1);
-}
-
 // Try every discard and keep the one leaving the best hand behind.
 function bestDiscardValue(cards, dict, keepCount) {
   let best = null;

@@ -4,16 +4,19 @@
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
   import { getDictionary } from './engine.js';
-  import { planTurn } from './bot.js';
 
   let { table, onexit } = $props();
 
   const v = $derived(table.view);
   const me = $derived(v ? v.players[v.seat] : null);
   const myTurn = $derived(!!v && v.turn === v.seat && ['draw', 'discard'].includes(v.phase));
+  const arranging = $derived(myTurn && v?.phase === 'discard');
   const others = $derived(v ? v.players.filter((p) => p.seat !== v.seat) : []);
 
-  // Turn workspace: one card goes to the discard slot, the rest can be spelled out.
+  // Turn workspace: one card goes to the discard slot, the rest can be spelled
+  // out. `order` is the hand as the player has arranged it, which is theirs to
+  // shuffle about however they like.
+  let order = $state([]);
   let held = $state(null);
   let discardId = $state(null);
   let words = $state([[]]);
@@ -21,20 +24,20 @@
 
   const byId = $derived(new Map((v?.hand ?? []).map((c) => [c.id, c])));
   const placed = $derived(new Set([...(discardId ? [discardId] : []), ...words.flat()]));
-  const handCards = $derived((v?.hand ?? []).filter((c) => !placed.has(c.id)));
+  const handCards = $derived(order.filter((id) => !placed.has(id) && byId.has(id)).map((id) => byId.get(id)));
   const discardCard = $derived(discardId ? byId.get(discardId) : null);
 
   // Reset the workspace whenever the hand changes underneath us (new turn, new round).
-  let signature = $derived(`${v?.round}:${v?.phase}:${(v?.hand ?? []).map((c) => c.id).join(',')}`);
+  const signature = $derived(`${v?.round}:${v?.phase}:${(v?.hand ?? []).map((c) => c.id).join(',')}`);
   let lastSignature = '';
   $effect(() => {
-    if (signature !== lastSignature) {
-      lastSignature = signature;
-      held = null;
-      discardId = null;
-      words = [[]];
-      notice = '';
-    }
+    if (signature === lastSignature) return;
+    lastSignature = signature;
+    order = (v?.hand ?? []).map((c) => c.id);
+    held = null;
+    discardId = null;
+    words = [[]];
+    notice = '';
   });
 
   function letters(ids) {
@@ -57,31 +60,45 @@
   const usesEverything = $derived(discardId != null && handCards.length === 0 && filledWords.length > 0);
   const leftoverValue = $derived(handCards.reduce((sum, c) => sum + c.value, 0));
 
-  function pick(id) {
-    held = held === id ? null : id;
+  // ------------------------------------------------------------ moving cards
+
+  function detach(id) {
+    if (discardId === id) discardId = null;
+    words = words.map((w) => w.filter((c) => c !== id));
+  }
+  function tidyRows() {
+    words = words.filter((w, i) => w.length || i === words.length - 1);
+    if (!words.length || words[words.length - 1].length) words = [...words, []];
+  }
+
+  function toWord(id, index, at = null) {
+    if (!arranging || index == null) return;
+    detach(id);
+    const row = [...(words[index] ?? [])];
+    const cut = at == null || at > row.length ? row.length : at;
+    row.splice(cut, 0, id);
+    words = words.map((w, i) => (i === index ? row : w));
+    tidyRows();
+    held = null;
     notice = '';
   }
-  function slotClick() {
-    if (held) {
-      const previous = discardId; // swapping puts the old card back in your hand
-      discardId = held;
-      held = previous ?? null;
-    } else if (discardId) {
-      discardId = null;
-    } else {
-      notice = 'Pick a card first.';
-    }
-  }
-  function toWord(index) {
-    if (!held) { notice = 'Pick a card first.'; return; }
-    words[index] = [...words[index], held];
+  function toDiscard(id) {
+    if (!arranging) return;
+    detach(id);
+    discardId = id;
+    tidyRows();
     held = null;
-    if (words[words.length - 1].length) words = [...words, []];
+    notice = '';
   }
-  function removeFromWord(index, id) {
-    words[index] = words[index].filter((c) => c !== id);
-    words = words.filter((w, i) => w.length || i === words.length - 1);
-    if (!words.length) words = [[]];
+  function toHand(id, at = null) {
+    detach(id);
+    const rest = order.filter((c) => c !== id);
+    const cut = at == null || at > rest.length ? rest.length : at;
+    rest.splice(cut, 0, id);
+    order = rest;
+    tidyRows();
+    held = null;
+    notice = '';
   }
   function clearWorkspace() {
     words = [[]];
@@ -89,18 +106,83 @@
     held = null;
     notice = '';
   }
-  function arrangeForMe() {
-    const dict = getDictionary();
-    if (!dict) return;
-    const plan = planTurn(v.hand, dict);
-    discardId = plan.discardId;
-    const chosen = plan.canGoOut && !v.mustLayDown ? plan.result.goOutWords : plan.result.words;
-    words = [...chosen.map((w) => [...w.cardIds]), []];
-    held = null;
-    notice = v.mustLayDown
-      ? 'Best arrangement for what you are holding.'
-      : plan.canGoOut ? 'That hand can go out.' : 'Best arrangement — the rest would be left over.';
+
+  // Tapping still works for anyone who would rather not drag.
+  function tap(id) {
+    if (!arranging) return;
+    held = held === id ? null : id;
+    notice = '';
   }
+  function tapRow(index) {
+    if (!arranging) return;
+    if (!held) { notice = 'Pick a card, or just drag one here.'; return; }
+    toWord(held, index);
+  }
+  function tapSlot() {
+    if (!arranging) return;
+    if (held) toDiscard(held);
+    else if (discardId) toHand(discardId);
+    else notice = 'Pick a card, or just drag one here.';
+  }
+
+  // ------------------------------------------------------------ dragging
+
+  // One pointer-driven drag for mouse and touch alike: a card follows the
+  // finger, and whatever sits under it when you let go takes the card.
+  let drag = $state(null);
+
+  function startDrag(event, id) {
+    if (!arranging || event.button > 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    drag = {
+      id,
+      x: event.clientX,
+      y: event.clientY,
+      ox: event.clientX - rect.left,
+      oy: event.clientY - rect.top,
+      width: rect.width,
+      moved: false
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }
+
+  function moveDrag(event) {
+    if (!drag) return;
+    const far = Math.abs(event.clientX - drag.x) > 5 || Math.abs(event.clientY - drag.y) > 5;
+    drag = { ...drag, x: event.clientX, y: event.clientY, moved: drag.moved || far };
+  }
+
+  /** Where in a row of cards a drop at this x-position belongs. */
+  function insertionIndex(zone, x) {
+    const cards = [...zone.querySelectorAll('[data-card]')].filter((el) => el.dataset.card !== drag?.id);
+    let at = cards.length;
+    for (let i = 0; i < cards.length; i++) {
+      const box = cards[i].getBoundingClientRect();
+      if (x < box.left + box.width / 2) { at = i; break; }
+    }
+    return at;
+  }
+
+  function endDrag(event) {
+    if (!drag) return;
+    const { id, moved } = drag;
+    const point = document.elementFromPoint(event.clientX, event.clientY);
+    const zone = point?.closest('[data-drop]');
+    drag = null;
+
+    if (!moved) { tap(id); return; }
+    if (!zone) return;
+
+    if (zone.dataset.drop === 'discard') toDiscard(id);
+    else if (zone.dataset.drop === 'hand') toHand(id, insertionIndex(zone, event.clientX));
+    else if (zone.dataset.drop === 'word') toWord(id, Number(zone.dataset.index), insertionIndex(zone, event.clientX));
+  }
+
+  function keyCard(event, id) {
+    if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); tap(id); }
+  }
+
+  // ------------------------------------------------------------ turn
 
   function submit(goOut) {
     if (!discardId) { notice = 'Choose a card to discard.'; return; }
@@ -116,12 +198,14 @@
     if (v.phase === 'roundEnd') return `Round ${v.round} scored`;
     if (v.goneOut != null && v.goneOut !== v.seat) return `${v.players[v.goneOut].name} went out — last turn each`;
     if (!myTurn) return `${v.players[v.turn].name} is ${v.phase === 'draw' ? 'drawing' : 'thinking'}`;
-    return v.phase === 'draw' ? 'Draw a card' : 'Discard one card — and spell out the rest if you can';
+    return v.phase === 'draw' ? 'Draw a card' : 'Drag one card to the discard, and spell out the rest if you can';
   }
 </script>
 
+<svelte:window onpointermove={moveDrag} onpointerup={endDrag} onpointercancel={() => (drag = null)} />
+
 {#if v}
-  <div class="table-shell">
+  <div class="table-shell" class:dragging={!!drag?.moved}>
     <header class="spread top">
       <div class="row">
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
@@ -165,13 +249,27 @@
       <div class="zones">
         <div class="zone">
           <div class="zone-head tiny">Discard</div>
-          <button class="slot" class:armed={!!held} onclick={slotClick}>
+          <div
+            class="slot"
+            class:armed={!!held || !!drag?.moved}
+            data-drop="discard"
+            role="button"
+            tabindex="0"
+            onclick={tapSlot}
+            onkeydown={(e) => { if (e.key === 'Enter') tapSlot(); }}
+          >
             {#if discardCard}
-              <LetterCard card={discardCard} />
+              <div
+                class="cardslot"
+                data-card={discardCard.id}
+                onpointerdown={(e) => startDrag(e, discardCard.id)}
+              >
+                <LetterCard card={discardCard} />
+              </div>
             {:else}
-              <span class="placeholder">drop one card</span>
+              <span class="placeholder">drag one card here</span>
             {/if}
-          </button>
+          </div>
         </div>
 
         <div class="zone grow">
@@ -186,24 +284,33 @@
           </div>
           <div class="words">
             {#each words as word, i (i)}
-              <button class="wordrow {wordState(word)}" class:armed={!!held} onclick={() => toWord(i)}>
+              <div
+                class="wordrow {wordState(word)}"
+                class:armed={!!held || !!drag?.moved}
+                data-drop="word"
+                data-index={i}
+                role="button"
+                tabindex="0"
+                onclick={() => tapRow(i)}
+                onkeydown={(e) => { if (e.key === 'Enter') tapRow(i); }}
+              >
                 {#if word.length}
                   <span class="wordcards">
                     {#each word as id (id)}
                       <span
-                        class="chip"
-                        role="button"
-                        tabindex="0"
-                        onclick={(e) => { e.stopPropagation(); removeFromWord(i, id); }}
-                        onkeydown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); removeFromWord(i, id); } }}
-                      >{byId.get(id)?.letters.toUpperCase()}</span>
+                        class="cardslot"
+                        data-card={id}
+                        onpointerdown={(e) => { e.stopPropagation(); startDrag(e, id); }}
+                      >
+                        <LetterCard card={byId.get(id)} size="sm" />
+                      </span>
                     {/each}
                   </span>
                   <span class="wordtext">{letters(word)} <span class="num">{wordValue(word)}</span></span>
                 {:else}
-                  <span class="placeholder">{words.length > 1 ? 'another word' : 'tap a card, then tap here'}</span>
+                  <span class="placeholder">{words.length > 1 ? 'another word' : 'drag cards here to spell'}</span>
                 {/if}
-              </button>
+              </div>
             {/each}
           </div>
         </div>
@@ -220,20 +327,25 @@
         <span class="tiny" class:err={!!table.error}>{notice || table.error}</span>
       </div>
 
-      <div class="hand">
+      <div class="hand" data-drop="hand">
         {#each handCards as card (card.id)}
-          <LetterCard
-            {card}
-            size="lg"
-            playable={myTurn}
-            selected={held === card.id}
-            onclick={() => pick(card.id)}
-          />
+          <span
+            class="cardslot"
+            class:lifted={drag?.id === card.id && drag?.moved}
+            data-card={card.id}
+            role="button"
+            tabindex="0"
+            aria-label={`${card.letters.toUpperCase()}, ${card.value} points`}
+            onpointerdown={(e) => startDrag(e, card.id)}
+            onkeydown={(e) => keyCard(e, card.id)}
+          >
+            <LetterCard {card} size="lg" playable={arranging} selected={held === card.id} />
+          </span>
         {/each}
         {#if !handCards.length}<div class="muted tiny">Every card is placed.</div>{/if}
       </div>
 
-      {#if myTurn && v.phase === 'discard'}
+      {#if arranging}
         <div class="row wrap actions">
           {#if v.mustLayDown}
             <button class="btn primary" disabled={!discardId || !allWordsValid} onclick={() => submit(false)}>
@@ -244,7 +356,6 @@
           {:else}
             <button class="btn primary" disabled={!discardId} onclick={() => submit(false)}>Discard &amp; pass</button>
           {/if}
-          <button class="btn small" onclick={arrangeForMe}>Arrange for me</button>
           <button class="btn ghost small" onclick={clearWorkspace}>Clear</button>
           {#if filledWords.length && !usesEverything && !v.mustLayDown}
             <span class="tiny muted">Going out needs every card in a word.</span>
@@ -261,6 +372,16 @@
       <GameLog log={v.log} />
     </details>
   </div>
+
+  {#if drag?.moved && byId.get(drag.id)}
+    <div
+      class="ghostcard"
+      style={`left:${drag.x - drag.ox}px; top:${drag.y - drag.oy}px; width:${drag.width}px;`}
+      aria-hidden="true"
+    >
+      <LetterCard card={byId.get(drag.id)} size="lg" ghost />
+    </div>
+  {/if}
 
   {#if v.phase === 'roundEnd' && v.roundSummary}
     <div class="overlay fade-in">
@@ -317,6 +438,7 @@
 
 <style>
   .table-shell { display: grid; gap: 0.9rem; }
+  .table-shell.dragging { cursor: grabbing; }
   .top { align-items: flex-start; }
   .round { font-family: var(--serif); font-size: 1.15rem; }
   .status { font-size: 1rem; color: var(--ink-soft); }
@@ -340,21 +462,27 @@
   .zone.grow { flex: 1; min-width: 260px; }
   .zone-head { opacity: 0.7; letter-spacing: 0.08em; text-transform: uppercase; }
 
+  /* A card being dragged must not let the page scroll out from under it. */
+  .cardslot { display: block; touch-action: none; cursor: grab; }
+  .cardslot.lifted { opacity: 0.35; }
+  .ghostcard { position: fixed; z-index: 60; pointer-events: none; }
+
   .slot {
     display: grid; place-items: center;
-    min-width: 108px; min-height: 130px;
+    min-width: 112px; min-height: 136px;
+    padding: 0.35rem;
     border: 1px dashed color-mix(in srgb, #f0e6d2 40%, transparent);
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, black 12%, transparent);
     color: inherit; cursor: pointer;
   }
   .slot.armed, .wordrow.armed { border-color: var(--brass-soft); background: color-mix(in srgb, var(--brass) 14%, transparent); }
-  .placeholder { font-size: 0.92rem; opacity: 0.7; padding: 0 0.6rem; }
+  .placeholder { font-size: 0.92rem; opacity: 0.7; padding: 0 0.6rem; text-align: center; }
 
   .words { display: grid; gap: 0.4rem; }
   .wordrow {
-    display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
-    min-height: 60px; padding: 0.5rem 0.7rem;
+    display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap;
+    min-height: 82px; padding: 0.5rem 0.7rem;
     border: 1px dashed color-mix(in srgb, #f0e6d2 34%, transparent);
     border-radius: var(--radius-sm);
     background: color-mix(in srgb, black 12%, transparent);
@@ -362,20 +490,17 @@
   }
   .wordrow.valid { border-style: solid; border-color: #6fbf94; background: color-mix(in srgb, #6fbf94 16%, transparent); }
   .wordrow.invalid, .wordrow.short { border-style: solid; border-color: color-mix(in srgb, var(--rose) 70%, white 10%); }
-  .wordcards { display: flex; gap: 0.25rem; flex-wrap: wrap; }
-  .chip {
-    display: inline-block; padding: 0.25em 0.55em; border-radius: 7px;
-    background: var(--card-face); color: #23201c; font-family: var(--serif);
-    font-size: 1.25rem; font-weight: 600;
-  }
-  .chip:hover { background: color-mix(in srgb, var(--rose) 30%, var(--card-face)); }
+  .wordcards { display: flex; gap: 0.3rem; flex-wrap: wrap; }
   .wordtext { font-family: var(--serif); font-size: 1.15rem; opacity: 0.9; }
 
   .thinking { position: absolute; bottom: 0.6rem; right: 0.9rem; opacity: 0.6; font-style: italic; }
 
   .you { display: grid; gap: 0.6rem; }
   .you-head { align-items: baseline; }
-  .hand { display: flex; gap: 0.55rem; flex-wrap: wrap; min-height: 128px; align-items: flex-end; }
+  .hand {
+    display: flex; gap: 0.55rem; flex-wrap: wrap; min-height: 140px; align-items: flex-end;
+    padding: 0.3rem; border-radius: var(--radius-sm);
+  }
   .actions { gap: 0.4rem; }
 
   .log-panel summary { cursor: pointer; font-size: 0.85rem; color: var(--ink-soft); }
@@ -399,18 +524,15 @@
 
   @media (max-width: 640px) {
     /* One thumb, one column: hands shrink, strips scroll, sheets scroll. */
-    .hand { min-height: 0; gap: 0.3rem; }
+    .hand { min-height: 0; gap: 0.35rem; }
     .seats { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: none; }
     .seats::-webkit-scrollbar { display: none; }
     .board { min-height: 0; padding: 0.7rem; }
     .overlay { padding: 0.6rem; align-items: end; }
-    .sheet, .result { max-height: 88dvh; overflow-y: auto; }
-  }
-
-  @media (max-width: 640px) {
+    .sheet { max-height: 88dvh; overflow-y: auto; }
     .zone.grow { min-width: 0; flex-basis: 100%; }
-    .slot { min-width: 68px; min-height: 84px; }
-    .wordrow { min-height: 46px; }
+    .slot { min-width: 84px; min-height: 104px; }
+    .wordrow { min-height: 64px; }
     .actions { gap: 0.35rem; }
   }
 </style>

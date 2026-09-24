@@ -93,8 +93,8 @@ game's own rules page too:
 `public/data/quiddler-words.txt` is 52k words, built from the system dictionary by
 `npm run dict`: lowercase entries only (so no proper nouns), 3–10 letters, no
 vowel-free abbreviations, plus the standard tournament two-letter set. The client
-loads it once and does prefix lookups by binary search, which is what makes the
-solver behind "Arrange for me" — and the bots — fast enough to run on every turn.
+loads it once and does prefix lookups by binary search, which is what keeps the
+bots fast enough to think on every turn.
 
 ## Deploying
 
@@ -111,10 +111,44 @@ docker build -t tommy-games-server .
 docker run -p 8787:8787 -v tommy-data:/data tommy-games-server
 ```
 
-Environment variables: `PORT`, `DATA_DIR` (where accounts are kept),
-`ALLOWED_ORIGINS` (comma-separated, restricts who may connect), and
-`BOT_DELAY` / `TRICK_PAUSE` for pacing. Serve it over `wss://` if the site is on
-`https://`, or browsers will block the connection.
+| Variable | Default | What it does |
+| --- | --- | --- |
+| `PORT` | `8787` | Port to listen on. Most hosts set this for you. |
+| `DATA_DIR` | `server/data` | Where accounts are kept. Point it at a volume that survives restarts. |
+| `ALLOWED_ORIGINS` | *(any)* | Comma-separated list of sites allowed to connect. |
+| `BOT_DELAY` / `TRICK_PAUSE` | `900` / `1600` | Pacing, in milliseconds. |
+| `AUTH_ATTEMPTS` / `AUTH_WINDOW` | `20` / `60000` | Sign-in tries allowed per address per window. |
+| `MAX_ROOMS` | `200` | How many tables may exist at once. |
+| `MAX_PAYLOAD` | `65536` | Largest message accepted, in bytes. |
+
+The site is served over `https://`, so the server has to be reachable over
+`wss://` — a browser refuses a plain `ws://` socket from a secure page. Any host
+that terminates TLS for you gives you this for free.
+
+### Putting it online
+
+Free hosts that keep WebSockets open are the thing to look for; several free
+tiers either forbid them or cut them off after a few minutes.
+
+1. Push this repository to GitHub.
+2. Create a service on a host that runs containers and supports WebSockets,
+   pointed at this repository. It will find the `Dockerfile` on its own.
+3. Set `DATA_DIR` to a mounted volume, and `ALLOWED_ORIGINS` to the address of
+   your published site, so nothing else can connect.
+4. Check `https://<your-server>/health` — it answers with the room count and the
+   list of games.
+5. In this repository, add an Actions **variable** named `GAME_SERVER_URL` under
+   *Settings → Secrets and variables → Actions → Variables*, set to
+   `wss://<your-server>`. The next deploy bakes it into the site, and online
+   play connects without anyone having to paste an address.
+
+Anyone who has not set that variable can still enter a server address by hand
+under *Settings → Online play*, which is also how you point the site at a server
+running on your own machine (`npm run server`, then `ws://localhost:8787`).
+
+A host that sleeps when idle is usually fine: an open WebSocket counts as
+traffic, so a table in progress keeps the server awake. The cost is a few
+seconds of cold start for whoever connects first.
 
 Accounts are a username, a scrypt-hashed password, and a win/loss record. They
 exist so your name and stats stick between sessions — nothing more.

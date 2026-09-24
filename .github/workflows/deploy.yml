@@ -27,6 +27,12 @@ jobs:
       - run: npm test
       - name: Build
         # BASE_PATH must match the repository name for a project Pages site.
+        # GAME_SERVER_URL is a repository variable (Settings → Secrets and
+        # variables → Actions → Variables). Set it to the wss:// address of the
+        # deployed server and the published site connects without anyone having
+        # to paste an address; leave it unset and online play asks for one.
+        env:
+          VITE_GAME_SERVER: ${{ vars.GAME_SERVER_URL }}
         run: BASE_PATH="/${GITHUB_REPOSITORY#*/}/" npm run build
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3

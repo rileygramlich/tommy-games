@@ -13,10 +13,14 @@ import * as reversiBot from '../src/lib/games/reversi/bot.js';
 const PORT = 8900 + (process.pid % 400);
 const dataDir = mkdtempSync(join(tmpdir(), 'tommy-games-test-'));
 
-function startServer() {
+function startServer(extraEnv = {}) {
   const child = spawn(process.execPath, ['server/index.js'], {
     cwd: new URL('..', import.meta.url).pathname,
-    env: { ...process.env, PORT: String(PORT), DATA_DIR: dataDir, BOT_DELAY: '0', TRICK_PAUSE: '0' },
+    env: {
+      ...process.env,
+      PORT: String(PORT), DATA_DIR: dataDir, BOT_DELAY: '0', TRICK_PAUSE: '0',
+      ...extraEnv
+    },
     stdio: ['ignore', 'pipe', 'pipe']
   });
   return new Promise((resolve, reject) => {
@@ -135,6 +139,53 @@ test('two players and a bot finish a game of Wizard online', async (t) => {
   assert.equal(users.alice.stats.wizard.won + users.bob.stats.wizard.won <= 2, true);
   assert.equal(users.alice.hash.length, 64, 'passwords are stored hashed, never in the clear');
   assert.equal(JSON.stringify(users).includes('felt-table'), false);
+});
+
+test('guessing at passwords is cut off after too many tries', async (t) => {
+  const server = await startServer({ AUTH_ATTEMPTS: '3', AUTH_WINDOW: '60000' });
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
+
+  const guesser = new Client('guesser');
+  await guesser.ready;
+
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    const refused = guesser.await_((m) => m.type === 'error', `attempt ${attempt}`);
+    guesser.send({ type: 'login', username: 'nobody', password: 'wrong-guess' });
+    assert.match((await refused).message, /No account/, `attempt ${attempt} is answered normally`);
+  }
+
+  const blocked = guesser.await_((m) => m.type === 'error', 'rate limited');
+  guesser.send({ type: 'login', username: 'nobody', password: 'wrong-guess' });
+  assert.match((await blocked).message, /Too many attempts/);
+
+  guesser.close();
+});
+
+test('a server will not hold more tables than it is told to', async (t) => {
+  const server = await startServer({ MAX_ROOMS: '1' });
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
+
+  const first = new Client('first');
+  const second = new Client('second');
+  await Promise.all([first.ready, second.ready]);
+
+  const firstIn = first.await_((m) => m.type === 'session', 'first session');
+  first.send({ type: 'register', username: 'hosty', password: 'felt-table' });
+  await firstIn;
+  const secondIn = second.await_((m) => m.type === 'session', 'second session');
+  second.send({ type: 'register', username: 'hosty2', password: 'felt-table' });
+  await secondIn;
+
+  const made = first.await_((m) => m.type === 'room', 'first room');
+  first.send({ type: 'createRoom', game: 'wizard', name: 'Only table' });
+  await made;
+
+  const refused = second.await_((m) => m.type === 'error', 'server full');
+  second.send({ type: 'createRoom', game: 'wizard', name: 'One too many' });
+  assert.match((await refused).message, /full/);
+
+  first.close();
+  second.close();
 });
 
 test('a second game type plays over the same wires', async (t) => {
