@@ -1,4 +1,5 @@
 <script>
+  import SuggestionBox from './SuggestionBox.svelte';
   import { GAME_LIST } from '../games/registry.js';
   let { go } = $props();
 </script>
@@ -31,16 +32,7 @@
     </article>
   {/each}
 
-  <article class="game panel coming">
-    <div class="body">
-      <h2>Something else</h2>
-      <p class="blurb">
-        The shelf has room. Each game is a rules engine plus a table screen, so the next one
-        drops in beside these two.
-      </p>
-      <div class="meta tiny muted">Suggestions welcome</div>
-    </div>
-  </article>
+  <SuggestionBox />
 </div>
 
 <style>

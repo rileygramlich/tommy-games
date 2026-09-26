@@ -18,6 +18,10 @@ import * as mastermindEngine from '../src/lib/games/mastermind/engine.js';
 import * as mastermindBot from '../src/lib/games/mastermind/bot.js';
 import * as reversiEngine from '../src/lib/games/reversi/engine.js';
 import * as reversiBot from '../src/lib/games/reversi/bot.js';
+import * as checkersEngine from '../src/lib/games/checkers/engine.js';
+import * as checkersBot from '../src/lib/games/checkers/bot.js';
+import * as connectfourEngine from '../src/lib/games/connectfour/engine.js';
+import * as connectfourBot from '../src/lib/games/connectfour/bot.js';
 import * as yahtzeeEngine from '../src/lib/games/yahtzee/engine.js';
 import * as yahtzeeBot from '../src/lib/games/yahtzee/bot.js';
 import { randomSeed } from '../src/lib/games/rng.js';
@@ -33,6 +37,8 @@ const ENGINES = {
   coup: { engine: coupEngine, bot: coupBot, ...coupEngine.meta },
   mastermind: { engine: mastermindEngine, bot: mastermindBot, ...mastermindEngine.meta },
   reversi: { engine: reversiEngine, bot: reversiBot, ...reversiEngine.meta },
+  connectfour: { engine: connectfourEngine, bot: connectfourBot, ...connectfourEngine.meta },
+  checkers: { engine: checkersEngine, bot: checkersBot, ...checkersEngine.meta },
   yahtzee: { engine: yahtzeeEngine, bot: yahtzeeBot, ...yahtzeeEngine.meta }
 };
 

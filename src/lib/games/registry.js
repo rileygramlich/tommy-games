@@ -41,6 +41,14 @@ import * as sudokuEngine from './sudoku/engine.js';
 import * as sudokuBot from './sudoku/bot.js';
 import SudokuTable from './sudoku/SudokuTable.svelte';
 
+import * as checkersEngine from './checkers/engine.js';
+import * as checkersBot from './checkers/bot.js';
+import CheckersTable from './checkers/CheckersTable.svelte';
+
+import * as connectfourEngine from './connectfour/engine.js';
+import * as connectfourBot from './connectfour/bot.js';
+import ConnectFourTable from './connectfour/ConnectFourTable.svelte';
+
 import * as backgammonEngine from './backgammon/engine.js';
 import * as backgammonBot from './backgammon/bot.js';
 import BackgammonTable from './backgammon/BackgammonTable.svelte';
@@ -244,6 +252,41 @@ export const GAMES = {
     ]
   },
 
+  checkers: {
+    ...checkersEngine.meta,
+    engine: checkersEngine, bot: checkersBot, component: CheckersTable, ready: noop,
+    accent: '#7a4b2a',
+    length: '15–25 min',
+    blurb: 'Standard draughts, played properly: if a jump is there you must take it. Trading pieces is easy, trading well is the whole game.',
+    options: [
+      { key: 'showHints', type: 'toggle', default: true, label: 'Mark your pieces',
+        help: 'Outline the pieces you are allowed to move this turn.' }
+    ],
+    rules: [
+      { title: 'The board', text: 'Eight by eight, dark squares only, twelve pieces each. Red moves first, up the board.' },
+      { title: 'Moving', text: 'A man steps one square diagonally forward onto an empty square.' },
+      { title: 'Jumping is compulsory', text: 'If you can jump an opposing piece to the empty square beyond it, you must. If the same piece can jump again from where it lands, it keeps going — one jump at a time, all in your turn.' },
+      { title: 'Crowning', text: 'A man reaching the far row becomes a king and may move and jump backwards as well. Crowning ends your turn, even in the middle of a chain of jumps.' },
+      { title: 'Winning', text: 'Take every enemy piece, or leave your opponent with no legal move. Forty moves with no capture and no crowning is a draw.' }
+    ]
+  },
+  connectfour: {
+    ...connectfourEngine.meta,
+    engine: connectfourEngine, bot: connectfourBot, component: ConnectFourTable, ready: noop,
+    accent: '#c2412d',
+    length: '5–10 min',
+    blurb: 'Take turns dropping discs into a standing grid. The first to line up four in any direction wins — and the column you leave open is usually the one that beats you.',
+    options: [
+      { key: 'showHints', type: 'toggle', default: true, label: 'Preview the drop',
+        help: 'Show a faint disc where your piece would land.' }
+    ],
+    rules: [
+      { title: 'The board', text: 'Seven columns, six rows, standing upright. Red drops first.' },
+      { title: 'Your move', text: 'Choose a column. Your disc falls to the lowest empty slot in it — you pick the column, gravity picks the row.' },
+      { title: 'Winning', text: 'Four of your discs in a row wins: across, up and down, or either diagonal. If every slot fills with no line, the game is drawn.' },
+      { title: 'The trap', text: 'Watch what your move leaves on top. Filling a slot can hand your opponent the square directly above it, so the winning move and the losing one are often the same column.' }
+    ]
+  },
   reversi: {
     ...reversiEngine.meta,
     engine: reversiEngine, bot: reversiBot, component: ReversiTable, ready: noop,

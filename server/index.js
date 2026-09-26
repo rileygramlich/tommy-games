@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { loadStore, flush } from './store.js';
 import { register, login, resume, revoke, publicUser } from './auth.js';
+import { validate, record, tooMany, readBody } from './suggestions.js';
 import { createDictionary } from '../src/lib/games/quiddler/dictionary.js';
 import * as quiddlerEngine from '../src/lib/games/quiddler/engine.js';
 import {
@@ -54,12 +55,57 @@ try {
   console.warn('Quiddler word list missing — run `npm run dict`. Wizard still works.', err.message);
 }
 
-const http = createServer((req, res) => {
-  if (req.url === '/health') {
+// The browser posts suggestions cross-origin from the published site, so the
+// same origin allowlist that guards the socket guards this too.
+function corsHeaders(origin) {
+  if (!origin) return {};
+  if (ALLOWED.length && !ALLOWED.includes(origin)) return {};
+  return {
+    'access-control-allow-origin': origin,
+    'access-control-allow-headers': 'content-type',
+    'access-control-allow-methods': 'POST, OPTIONS',
+    'access-control-max-age': '86400'
+  };
+}
+
+const http = createServer(async (req, res) => {
+  const path = (req.url ?? '').split('?')[0];
+  const origin = req.headers.origin;
+
+  if (path === '/health') {
     res.writeHead(200, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ ok: true, rooms: rooms.size, games: Object.keys(ENGINES) }));
     return;
   }
+
+  if (path === '/suggest') {
+    const cors = corsHeaders(origin);
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, cors);
+      res.end();
+      return;
+    }
+    const json = (status, body) => {
+      res.writeHead(status, { 'content-type': 'application/json', ...cors });
+      res.end(JSON.stringify(body));
+    };
+    if (req.method !== 'POST') return json(405, { ok: false, error: 'Post a suggestion.' });
+    if (origin && ALLOWED.length && !ALLOWED.includes(origin)) {
+      return json(403, { ok: false, error: 'Not an allowed origin.' });
+    }
+    const address = req.socket.remoteAddress ?? 'unknown';
+    if (tooMany(address)) {
+      return json(429, { ok: false, error: 'That is plenty for now. Try again later.' });
+    }
+    const body = await readBody(req);
+    if (body === null) return json(400, { ok: false, error: 'Could not read that.' });
+    const checked = validate(body);
+    if (!checked.ok) return json(400, checked);
+    // A honeypot hit is accepted and discarded: saying no only trains the bot.
+    if (!checked.drop) record(checked.entry);
+    return json(200, { ok: true });
+  }
+
   res.writeHead(200, { 'content-type': 'text/plain' });
   res.end('Tommy Games server. Connect a WebSocket client.\n');
 });

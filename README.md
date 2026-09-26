@@ -14,6 +14,8 @@ or on a desk. Ten are on it so far:
 | **Coup** | 2–6 | Two influences, a pile of coins, and permission to lie |
 | **Mastermind** | 2 | Hide four pegs, or break the other player's in ten |
 | **Reversi** | 2 | Bracket a line and the whole line flips |
+| **Checkers** | 2 | Standard draughts, jumps compulsory, kings both ways |
+| **Connect Four** | 2 | Drop a disc, take a line of four, mind the column you open |
 | **Yahtzee** | 1–6 | Five dice, thirteen boxes, no way to fill them all well |
 
 Three ways to play each one:
@@ -47,6 +49,7 @@ src/lib/games/<game>/engine.js       pure rules: createGame, legalMoves, applyMo
 src/lib/games/<game>/bot.js          picks a move given one seat's view
 src/lib/games/<game>/*Table.svelte   the table screen
 src/lib/games/registry.js            the shelf: one entry per game, everything reads this
+server/suggestions.js                validates and stores shelf suggestions
 src/lib/games/cards.js               a standard deck, shared by the card games
 src/lib/stores/localTable.svelte.js  runs an engine in the browser, drives bots
 src/lib/net/online.svelte.js         the same surface, backed by a WebSocket
@@ -81,6 +84,9 @@ game's own rules page too:
   same way in spirit (every non-jack card twice, free corners, suits running in a
   spiral) but the arrangement is generated.
 - **Backgammon** — no doubling cube.
+- **Checkers** — American/English draughts. Captures are compulsory, kings move one
+  square rather than flying, and crowning ends the turn even mid-chain. A draw is
+  called after forty moves with no capture and no crowning.
 - **Coup** — the base game is as printed. Responses go round in turn order rather
   than as a free-for-all race, since nobody can shout across a browser. Choosing
   which five characters are in play is the idea behind the Rebellion expansion,
