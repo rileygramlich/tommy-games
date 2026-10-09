@@ -121,6 +121,7 @@ docker run -p 8787:8787 -v tommy-data:/data tommy-games-server
 | --- | --- | --- |
 | `PORT` | `8787` | Port to listen on. Most hosts set this for you. |
 | `MONGODB_URI` | *(unset)* | Keep accounts in MongoDB instead of a file, e.g. `mongodb+srv://…/tommy-games`. For hosts whose disk is wiped on restart. |
+| `GOOGLE_CLIENT_ID` | *(unset)* | Turns on Sign in with Google. The server sends it to the site and checks every Google token against it. |
 | `DATA_DIR` | `server/data` | Where accounts are kept when `MONGODB_URI` is unset. Point it at a volume that survives restarts. |
 | `ALLOWED_ORIGINS` | *(any)* | Comma-separated list of sites allowed to connect. |
 | `BOT_DELAY` / `TRICK_PAUSE` | `900` / `1600` | Pacing, in milliseconds. |
@@ -168,9 +169,25 @@ around the clock on purpose: Render's free plan allows 750 instance hours a
 month across all your services.
 
 Nobody needs an account to play: pick a name and you are a guest, kept in the
-server's memory only. Accounts are a username, a scrypt-hashed password, and a
-win/loss record, for anyone who wants their name and stats to stick between
-sessions — nothing more.
+server's memory only. Accounts are for anyone who wants their name and stats to
+stick between sessions: either Sign in with Google, or a username and a
+scrypt-hashed password. Either way the account holds a display name and a
+win/loss record, nothing more; from Google it keeps only the account ID and
+first name, not the email.
+
+### Turning on Sign in with Google
+
+1. In the [Google Cloud console](https://console.cloud.google.com), create a
+   project (or reuse one), then **APIs & Services → OAuth consent screen**:
+   External, app name *Tommy Games*, your email as support and developer
+   contact. Basic sign-in needs no extra scopes and no verification.
+2. **Credentials → Create credentials → OAuth client ID**, type *Web
+   application*. Under **Authorized JavaScript origins** add
+   `https://rileygramlich.github.io` and, for local play, `http://localhost:5173`.
+   No redirect URIs are needed: the button hands the browser a token directly.
+3. Copy the client ID (`…apps.googleusercontent.com`) into the server's
+   `GOOGLE_CLIENT_ID` on Render. The button appears on the next page load; there
+   is nothing to rebuild on the site.
 
 Phones drop their connection whenever the browser goes to the background, so a
 dropped connection keeps your seat: come back, and you sit down where you were.

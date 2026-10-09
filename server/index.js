@@ -6,7 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { loadStore, flush, storeLabel } from './store.js';
-import { register, login, guest, resume, revoke, publicUser } from './auth.js';
+import { register, login, guest, googleSignIn, googleClientId, resume, revoke, publicUser } from './auth.js';
 import { validate, record, tooMany, readBody } from './suggestions.js';
 import { createDictionary } from '../src/lib/games/quiddler/dictionary.js';
 import * as quiddlerEngine from '../src/lib/games/quiddler/engine.js';
@@ -165,14 +165,14 @@ wss.on('connection', (ws, request) => {
     ?? 'unknown';
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
-  send(ws, { type: 'welcome', server: 'tommy-games', games: Object.keys(ENGINES) });
+  send(ws, { type: 'welcome', server: 'tommy-games', games: Object.keys(ENGINES), googleClientId });
 
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return fail(ws, 'Malformed message.'); }
 
     try {
-      if (['register', 'login', 'auth', 'guest'].includes(msg.type) && tooManyAttempts(ws.address)) {
+      if (['register', 'login', 'auth', 'guest', 'google'].includes(msg.type) && tooManyAttempts(ws.address)) {
         return fail(ws, 'Too many attempts. Wait a minute and try again.');
       }
 
@@ -186,6 +186,14 @@ wss.on('connection', (ws, request) => {
           const result = login(msg.username, msg.password);
           if (result.error) return fail(ws, result.error);
           return enterSession(ws, result);
+        }
+        case 'google': {
+          // Checking the token with Google is asynchronous; answer when it is done.
+          googleSignIn(msg.credential).then((result) => {
+            if (result.error) fail(ws, result.error);
+            else enterSession(ws, result);
+          });
+          return;
         }
         case 'guest': {
           const result = guest(msg.name);

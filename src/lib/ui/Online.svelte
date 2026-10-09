@@ -69,6 +69,34 @@
     else online.login(username, password);
     password = '';
   }
+  // Google's own button, drawn by Google's script into this element. The
+  // script loads once, the first time the server says it offers Google.
+  function googleButton(node, clientId) {
+    let cancelled = false;
+    const render = () => {
+      const id = window.google?.accounts?.id;
+      if (cancelled || !id) return;
+      id.initialize({ client_id: clientId, callback: (response) => online.google(response.credential) });
+      id.renderButton(node, {
+        theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with',
+        width: Math.max(200, Math.min(node.clientWidth || 320, 400))
+      });
+    };
+    if (window.google?.accounts?.id) render();
+    else {
+      let script = document.querySelector('script[data-google-signin]');
+      if (!script) {
+        script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.dataset.googleSignin = '';
+        document.head.appendChild(script);
+      }
+      script.addEventListener('load', render, { once: true });
+    }
+    return { destroy() { cancelled = true; } };
+  }
+
   function sendChat(e) {
     e.preventDefault();
     if (chatText.trim()) online.chat(chatText);
@@ -134,6 +162,14 @@
           {/if}
         </div>
       </form>
+      {#if online.googleClientId}
+        <div class="google stack">
+          <span class="muted tiny">or keep your record with Google</span>
+          {#key online.googleClientId}
+            <div class="google-button" use:googleButton={online.googleClientId}></div>
+          {/key}
+        </div>
+      {/if}
       {#if online.error}<p class="err tiny">{online.error}</p>{/if}
       <p class="muted tiny">
         {#if mode === 'guest'}
@@ -263,6 +299,8 @@
   .status.online { color: #2f7d55; }
   .status.error, .status.closed { color: var(--rose); }
   .code { font-family: var(--tabular); letter-spacing: 0.12em; }
+  .google { gap: 0.5rem; padding-top: 0.25rem; }
+  .google-button { min-height: 44px; max-width: 400px; }
   .seats { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .seat {
     display: flex; align-items: center; gap: 0.4rem;

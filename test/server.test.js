@@ -280,3 +280,38 @@ test('guests play without an account, keep their seat across a reconnect, and le
   back.close();
   nameless.close();
 });
+
+test('Google sign-in is offered only when the server has a client ID', async (t) => {
+  const server = await startServer({ GOOGLE_CLIENT_ID: '' });
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
+
+  const client = new Client('google');
+  const welcome = client.await_((m) => m.type === 'welcome', 'welcome');
+  await client.ready;
+  assert.equal((await welcome).googleClientId, null);
+
+  const refused = client.await_((m) => m.type === 'error', 'google refusal');
+  client.send({ type: 'google', credential: 'not-a-real-token' });
+  assert.match((await refused).message, /not set up/);
+  client.close();
+});
+
+test('a forged Google token is turned away', async (t) => {
+  const server = await startServer({ GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com' });
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
+
+  const client = new Client('forger');
+  const welcome = client.await_((m) => m.type === 'welcome', 'welcome');
+  await client.ready;
+  assert.equal((await welcome).googleClientId, 'test-client.apps.googleusercontent.com');
+
+  const refused = client.await_((m) => m.type === 'error', 'forged token refusal');
+  client.send({ type: 'google', credential: 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl' });
+  assert.match((await refused).message, /didn't work/);
+
+  // And a Google account cannot be reached by the password route.
+  const noPassword = client.await_((m) => m.type === 'error', 'password route refusal');
+  client.send({ type: 'login', username: 'google:1', password: 'anything' });
+  assert.match((await noPassword).message, /No account/);
+  client.close();
+});

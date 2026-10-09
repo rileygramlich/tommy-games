@@ -24,6 +24,8 @@ export class Online {
   url = $state('');
   /** True while retrying a server that is probably still waking up. */
   waking = $state(false);
+  /** Set by the server when it offers Sign in with Google. */
+  googleClientId = $state(null);
 
   #ws = null;
   #attempts = 0;
@@ -84,6 +86,9 @@ export class Online {
 
   #handle(msg) {
     switch (msg.type) {
+      case 'welcome':
+        this.googleClientId = msg.googleClientId ?? null;
+        break;
       case 'session':
         this.user = msg.user;
         store(TOKEN_KEY, msg.token);
@@ -123,6 +128,7 @@ export class Online {
 
   register(username, password) { store(GUEST_KEY, null); this.send({ type: 'register', username, password }); }
   login(username, password) { store(GUEST_KEY, null); this.send({ type: 'login', username, password }); }
+  google(credential) { store(GUEST_KEY, null); this.send({ type: 'google', credential }); }
   guest(name) { store(GUEST_KEY, name.trim()); this.send({ type: 'guest', name }); }
   logout() { this.send({ type: 'logout' }); this.room = null; this.view = null; }
   refreshLobby() { this.send({ type: 'lobby' }); }
