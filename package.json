@@ -13,6 +13,7 @@
     "test": "node --test test/*.test.js"
   },
   "dependencies": {
+    "mongodb": "^6.21.0",
     "ws": "^8.18.3"
   },
   "devDependencies": {
@@ -20,5 +21,7 @@
     "svelte": "^5.57.0",
     "vite": "^7.1.14"
   },
-  "engines": { "node": ">=20" }
+  "engines": {
+    "node": ">=20"
+  }
 }

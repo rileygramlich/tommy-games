@@ -11,7 +11,7 @@
 
   let username = $state(settings.name ?? '');
   let password = $state('');
-  let mode = $state('login');       // login | register
+  let mode = $state('guest');       // guest | login | register
   let newGame = $state('wizard');
   let newName = $state('');
   let joinCode = $state('');
@@ -64,7 +64,8 @@
 
   function submitAuth(e) {
     e.preventDefault();
-    if (mode === 'register') online.register(username, password);
+    if (mode === 'guest') online.guest(username);
+    else if (mode === 'register') online.register(username, password);
     else online.login(username, password);
     password = '';
   }
@@ -98,29 +99,48 @@
   {:else if !online.user}
     <div class="panel stack auth">
       <div class="spread">
-        <strong class="small-head">{mode === 'register' ? 'Make an account' : 'Sign in'}</strong>
+        <strong class="small-head">
+          {mode === 'guest' ? 'Who is playing?' : mode === 'register' ? 'Make an account' : 'Sign in'}
+        </strong>
         <span class="status {online.status}">{online.status}</span>
       </div>
+      {#if online.waking}
+        <p class="muted tiny">Waking the game server up. The first visit after a quiet spell can take up to a minute.</p>
+      {/if}
       <form class="stack" onsubmit={submitAuth}>
         <label class="field"><span>Name</span>
-          <input type="text" bind:value={username} autocomplete="username" placeholder="tommy" />
+          <input type="text" bind:value={username} autocomplete={mode === 'guest' ? 'nickname' : 'username'}
+            maxlength="16" placeholder="tommy" />
         </label>
-        <label class="field"><span>Password</span>
-          <input type="password" bind:value={password} autocomplete="current-password" />
-        </label>
+        {#if mode !== 'guest'}
+          <label class="field"><span>Password</span>
+            <input type="password" bind:value={password}
+              autocomplete={mode === 'register' ? 'new-password' : 'current-password'} />
+          </label>
+        {/if}
         <div class="row wrap">
-          <button class="btn primary" type="submit" disabled={online.status !== 'online'}>
-            {mode === 'register' ? 'Create account' : 'Sign in'}
+          <button class="btn primary" type="submit" disabled={online.status !== 'online' || !username.trim()}>
+            {mode === 'guest' ? 'Play' : mode === 'register' ? 'Create account' : 'Sign in'}
           </button>
-          <button class="btn ghost small" type="button" onclick={() => (mode = mode === 'login' ? 'register' : 'login')}>
-            {mode === 'login' ? 'I need an account' : 'I already have one'}
-          </button>
+          {#if mode === 'guest'}
+            <button class="btn ghost small" type="button" onclick={() => (mode = 'login')}>
+              Sign in to keep your record
+            </button>
+          {:else}
+            <button class="btn ghost small" type="button" onclick={() => (mode = mode === 'login' ? 'register' : 'login')}>
+              {mode === 'login' ? 'I need an account' : 'I already have one'}
+            </button>
+            <button class="btn ghost small" type="button" onclick={() => (mode = 'guest')}>Just play</button>
+          {/if}
         </div>
       </form>
       {#if online.error}<p class="err tiny">{online.error}</p>{/if}
       <p class="muted tiny">
-        Accounts live on your game server and only exist to remember your name and record. Do not
-        reuse a password you care about.
+        {#if mode === 'guest'}
+          No account needed: pick a name and you're in. Sign in instead if you want your wins counted.
+        {:else}
+          Accounts only exist to remember your name and record. Do not reuse a password you care about.
+        {/if}
       </p>
     </div>
   {:else if room && room.started && online.view}

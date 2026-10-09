@@ -1,0 +1,18 @@
+# Render Blueprint for the online game server. The site itself is static and
+# lives on GitHub Pages. Free plan: real WebSockets, but it sleeps after 15 idle
+# minutes and its disk is wiped on restart, so accounts go to MongoDB.
+# Render asks for the `sync: false` values when you create the Blueprint.
+services:
+  - type: web
+    name: tommy-games
+    runtime: docker
+    plan: free
+    region: oregon
+    healthCheckPath: /health
+    envVars:
+      # Only the published site may connect. Origins have no path.
+      - key: ALLOWED_ORIGINS
+        value: https://rileygramlich.github.io
+      # mongodb+srv://…/tommy-games — the database name goes after the host.
+      - key: MONGODB_URI
+        sync: false

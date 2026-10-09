@@ -5,14 +5,14 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
-import { loadStore, flush } from './store.js';
-import { register, login, resume, revoke, publicUser } from './auth.js';
+import { loadStore, flush, storeLabel } from './store.js';
+import { register, login, guest, resume, revoke, publicUser } from './auth.js';
 import { validate, record, tooMany, readBody } from './suggestions.js';
 import { createDictionary } from '../src/lib/games/quiddler/dictionary.js';
 import * as quiddlerEngine from '../src/lib/games/quiddler/engine.js';
 import {
   rooms, listRooms, createRoom, joinRoom, leaveRoom, closeRoom, addBot, removeSeat,
-  startGame, applyMove, seatView, roomView, setDictionary, ENGINES
+  startGame, applyMove, seatView, roomView, setDictionary, disconnect, ENGINES
 } from './rooms.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -25,6 +25,8 @@ const AUTH_ATTEMPTS = Number(process.env.AUTH_ATTEMPTS ?? 20);
 const AUTH_WINDOW = Number(process.env.AUTH_WINDOW ?? 60000);
 const MAX_ROOMS = Number(process.env.MAX_ROOMS ?? 200);
 const MAX_PAYLOAD = Number(process.env.MAX_PAYLOAD ?? 64 * 1024);
+// How long a table with nobody connected waits for someone to come back.
+const ROOM_GRACE = Number(process.env.ROOM_GRACE ?? 10 * 60 * 1000);
 
 const attempts = new Map(); // address -> { count, until }
 
@@ -45,7 +47,14 @@ setInterval(() => {
   for (const [address, entry] of attempts) if (now > entry.until) attempts.delete(address);
 }, AUTH_WINDOW).unref();
 
-loadStore();
+try {
+  await loadStore();
+} catch (err) {
+  // Exit rather than run without accounts; the host restarts the process.
+  console.error(`Could not load accounts: ${err.message}`);
+  process.exit(1);
+}
+console.log(`accounts kept in ${storeLabel()}`);
 try {
   const dict = createDictionary(readFileSync(join(here, '../public/data/quiddler-words.txt'), 'utf8'));
   quiddlerEngine.setDictionary(dict);
@@ -163,7 +172,7 @@ wss.on('connection', (ws, request) => {
     try { msg = JSON.parse(raw); } catch { return fail(ws, 'Malformed message.'); }
 
     try {
-      if (['register', 'login', 'auth'].includes(msg.type) && tooManyAttempts(ws.address)) {
+      if (['register', 'login', 'auth', 'guest'].includes(msg.type) && tooManyAttempts(ws.address)) {
         return fail(ws, 'Too many attempts. Wait a minute and try again.');
       }
 
@@ -175,6 +184,11 @@ wss.on('connection', (ws, request) => {
         }
         case 'login': {
           const result = login(msg.username, msg.password);
+          if (result.error) return fail(ws, result.error);
+          return enterSession(ws, result);
+        }
+        case 'guest': {
+          const result = guest(msg.name);
           if (result.error) return fail(ws, result.error);
           return enterSession(ws, result);
         }
@@ -271,8 +285,10 @@ wss.on('connection', (ws, request) => {
   ws.on('close', () => {
     clients.delete(ws);
     const room = currentRoom(ws);
-    if (room && ws.user) {
-      leaveRoom(room, ws.user.id);
+    // Another connection may already have this person back at the table.
+    const elsewhere = [...clients].some((c) => c.user?.id === ws.user?.id && c.roomId === room?.id);
+    if (room && ws.user && !elsewhere) {
+      disconnect(room, ws.user.id);
       roomBroadcast(room);
     }
   });
@@ -287,13 +303,16 @@ setInterval(() => {
   }
 }, 30000).unref();
 
-// Sweep empty rooms once a minute.
+// Once a minute, close tables nobody has been connected to for ROOM_GRACE.
 setInterval(() => {
+  const now = Date.now();
   for (const room of rooms.values()) {
     const live = room.seats.some((s) => !s.isBot && s.connected);
-    if (!live) closeRoom(room);
+    if (live) { room.emptySince = null; continue; }
+    room.emptySince ??= now;
+    if (now - room.emptySince >= ROOM_GRACE) closeRoom(room);
   }
-}, 60000).unref();
+}, Math.min(60000, ROOM_GRACE)).unref();
 
 http.listen(PORT, () => {
   console.log(`Tommy Games server on :${PORT}`);
@@ -305,9 +324,9 @@ http.listen(PORT, () => {
 for (const signal of ['SIGTERM', 'SIGINT']) {
   process.on(signal, () => {
     console.log(`${signal} — closing down.`);
-    flush();
     for (const ws of clients) ws.close(1001, 'Server restarting');
-    http.close(() => process.exit(0));
-    setTimeout(() => process.exit(0), 3000).unref();
+    // Saving to MongoDB is asynchronous; let it land before exiting.
+    Promise.resolve(flush()).finally(() => http.close(() => process.exit(0)));
+    setTimeout(() => process.exit(0), 5000).unref();
   });
 }

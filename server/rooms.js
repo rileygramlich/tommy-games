@@ -144,6 +144,16 @@ export function leaveRoom(room, userId) {
   }
 }
 
+/**
+ * A dropped connection, as opposed to choosing to leave. Phones drop their
+ * socket whenever the browser goes to the background (say, to text someone
+ * the invite link), so the seat waits for them instead of being given up.
+ */
+export function disconnect(room, userId) {
+  const seat = room.seats.find((s) => s.userId === userId);
+  if (seat) seat.connected = false;
+}
+
 export function closeRoom(room) {
   clearTimeout(room.timer);
   room.closed = true;

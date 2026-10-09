@@ -236,3 +236,47 @@ test('a second game type plays over the same wires', async (t) => {
   dark.close();
   light.close();
 });
+
+test('guests play without an account, keep their seat across a reconnect, and leave no record', async (t) => {
+  const server = await startServer();
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
+
+  const grandma = new Client('grandma');
+  await grandma.ready;
+  const session = grandma.await_((m) => m.type === 'session', 'guest session');
+  grandma.send({ type: 'guest', name: '  Grandma  ' });
+  const { user, token } = await session;
+  assert.equal(user.name, 'Grandma');
+  assert.equal(user.guest, true);
+  assert.match(token, /^guest-/);
+
+  const roomMsg = grandma.await_((m) => m.type === 'room', 'room');
+  grandma.send({ type: 'createRoom', game: 'reversi', name: 'Sunday' });
+  const code = (await roomMsg).room.id;
+
+  // The phone drops its connection mid-evening and comes back with its token.
+  grandma.close();
+  const back = new Client('grandma-again');
+  await back.ready;
+  const resumed = back.await_((m) => m.type === 'session', 'resumed session');
+  back.send({ type: 'auth', token });
+  assert.equal((await resumed).user.id, user.id);
+  const rejoined = back.await_((m) => m.type === 'room', 'rejoined room');
+  back.send({ type: 'joinRoom', roomId: code });
+  const seats = (await rejoined).room.seats.filter((s) => s.userId === user.id);
+  assert.equal(seats.length, 1, 'the same seat, not a second one');
+
+  // Nothing about a guest is written down: no file at all, or an empty one.
+  let saved = { users: {}, tokens: {} };
+  try { saved = JSON.parse(readFileSync(join(dataDir, 'users.json'), 'utf8')); } catch { /* never written */ }
+  assert.equal(Object.keys(saved.users).length, 0);
+  assert.equal(Object.keys(saved.tokens).length, 0);
+
+  const nameless = new Client('nameless');
+  await nameless.ready;
+  const refused = nameless.await_((m) => m.type === 'error', 'refusal');
+  nameless.send({ type: 'guest', name: '   ' });
+  assert.match((await refused).message, /name/);
+  back.close();
+  nameless.close();
+});

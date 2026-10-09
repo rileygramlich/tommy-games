@@ -61,7 +61,23 @@ export function issueToken(userId) {
   return token;
 }
 
+// Guests pick a name and play: no password, no record. They live in memory
+// only, so a restart forgets them along with the tables they were sitting at.
+const guests = new Map(); // token -> user
+const GUEST_LIMIT = 2000;
+
+export function guest(name) {
+  const display = String(name ?? '').replace(/\s+/g, ' ').trim();
+  if (display.length < 1 || display.length > 16) return { error: 'Pick a name of 1–16 characters.' };
+  if (guests.size >= GUEST_LIMIT) guests.delete(guests.keys().next().value); // oldest first
+  const token = `guest-${randomBytes(24).toString('hex')}`;
+  const user = { id: `guest:${randomBytes(6).toString('hex')}`, display, guest: true, stats: {} };
+  guests.set(token, user);
+  return { user, token };
+}
+
 export function resume(token) {
+  if (guests.has(token)) return { user: guests.get(token), token };
   const data = getData();
   const entry = data.tokens[token];
   if (!entry) return { error: 'Session expired.' };
@@ -76,6 +92,7 @@ export function resume(token) {
 }
 
 export function revoke(token) {
+  guests.delete(token);
   const data = getData();
   if (data.tokens[token]) { delete data.tokens[token]; touch(); }
 }
@@ -90,5 +107,5 @@ export function recordResult(userId, gameId, won) {
 }
 
 export function publicUser(user) {
-  return { id: user.id, name: user.display, stats: user.stats ?? {} };
+  return { id: user.id, name: user.display, guest: !!user.guest, stats: user.stats ?? {} };
 }
