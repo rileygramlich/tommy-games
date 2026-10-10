@@ -1,8 +1,16 @@
 <script>
   import { LETTERS } from '../games/quiddler/deck.js';
-  import { SETS } from '../games/coup/characters.js';
+  import { SETS, CHARACTER_LIST } from '../games/coup/characters.js';
   import CheatSheet from '../games/coup/CheatSheet.svelte';
+  import { ART } from '../art.js';
   let { game, go } = $props();
+
+  // Who painted the pictures on this game's cards.
+  const ART_FOR = {
+    coup: CHARACTER_LIST.map((c) => [c.name, c.key]),
+    wizard: [['Wizard', 'wizard'], ['Jester', 'jester']]
+  };
+  const credits = $derived((ART_FOR[game.id] ?? []).map(([role, key]) => ({ role, ...ART[key] })));
 </script>
 
 <article class="rules">
@@ -40,6 +48,18 @@
     </section>
   {/if}
 
+  {#if credits.length}
+    <section class="credits">
+      <h2>The pictures on the cards</h2>
+      <p class="muted">Public-domain paintings, cropped to fit. None of them is the art of the published game.</p>
+      <ul>
+        {#each credits as c (c.role)}
+          <li><b>{c.role}</b> — <a href={c.page} target="_blank" rel="noopener">{c.title}</a>, {c.artist}, {c.year}. {c.museum}.</li>
+        {/each}
+      </ul>
+    </section>
+  {/if}
+
   <div class="row wrap">
     <button class="btn primary" onclick={() => go(`#/play/${game.id}`)}>Play {game.name}</button>
     <button class="btn ghost small" onclick={() => go('#/')}>Something else</button>
@@ -59,4 +79,6 @@
     padding: 0.15em 0.45em; font-size: 0.78rem; font-family: var(--tabular);
   }
   .val b { font-family: var(--serif); font-size: 0.9rem; }
+  .credits ul { margin: 0.2rem 0 0; padding-left: 1.1rem; display: grid; gap: 0.25rem; font-size: 0.8rem; }
+  .credits p { margin: 0; font-size: 0.8rem; }
 </style>

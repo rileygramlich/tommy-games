@@ -195,5 +195,25 @@ A table closes after ten minutes with nobody connected.
 
 ## Credits
 
+The pictures on the cards are public-domain paintings, found on Wikimedia
+Commons and cropped to card shape (`public/art`, listed in `src/lib/art.js`).
+None of them is drawn for this site, and none is the art of the published
+games. Each game's rules page credits its own.
+
+| Card | Painting |
+| --- | --- |
+| Duke | Giovanni Bellini, *Doge Leonardo Loredan*, c. 1501 — National Gallery, London |
+| Assassin | Titian, *The Bravo*, c. 1515–20 — Kunsthistorisches Museum, Vienna |
+| Captain | Rembrandt, *The Night Watch* (Captain Frans Banninck Cocq), 1642 — Rijksmuseum |
+| Ambassador | Hans Holbein the Younger, *The Ambassadors* (Jean de Dinteville), 1533 — National Gallery, London |
+| Contessa | Jean-Auguste-Dominique Ingres, *Comtesse d'Haussonville*, 1845 — The Frick Collection |
+| Inquisitor | El Greco, *Cardinal Fernando Niño de Guevara*, c. 1600 — The Metropolitan Museum of Art |
+| Embezzler | after Marinus van Reymerswaele, *The Tax Collectors*, 1600s — National Museum in Warsaw |
+| Wizard | John William Waterhouse, *The Magic Circle*, 1886 — Tate Britain |
+| Jester | Jan Matejko, *Stańczyk*, 1862 — National Museum in Warsaw |
+
+The checkers crown is Tabler Icons' `crown` (MIT).
+
+
 Quiddler is published by Set Enterprises; Wizard by Ken Fisher and US Games
 Systems. This is a fan-made table for playing them, not affiliated with either.

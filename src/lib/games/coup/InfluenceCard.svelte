@@ -1,6 +1,6 @@
 <script>
   import { CHARACTERS } from './characters.js';
-  import CharacterFace from './CharacterFace.svelte';
+  import { ART } from '../../art.js';
   let {
     character = null,
     size = 'md',
@@ -28,7 +28,7 @@
   {#if faceDown || !spec}
     <span class="weave" aria-hidden="true"></span>
   {:else}
-    <span class="portrait"><CharacterFace character={spec.key} /></span>
+    <img class="painting" src={ART[spec.key].src} alt="" draggable="false" decoding="async" />
     <span class="name">{spec.name}</span>
   {/if}
 </svelte:element>
@@ -52,12 +52,8 @@
     font-family: var(--serif);
     transition: transform 0.14s ease, box-shadow 0.14s ease, filter 0.14s ease;
   }
-  .inf::before {
-    content: '';
-    position: absolute; inset: 4px 4px auto 4px; height: 4px;
-    border-radius: 2px;
-    background: var(--ink-colour, var(--ink-faint));
-  }
+  /* A size container, so the name can be sized to the card it is on. */
+  .inf:not(.back) { overflow: hidden; container-type: inline-size; }
   .inf.sm { width: clamp(38px, 10vw, 46px); height: clamp(52px, 14vw, 64px); }
   .inf.lg { width: clamp(64px, 17vw, 82px); height: clamp(88px, 23.5vw, 114px); }
   button.inf { cursor: pointer; }
@@ -66,17 +62,24 @@
   .inf.dimmed { filter: grayscale(0.5) brightness(0.9); opacity: 0.7; }
   .inf.dead { filter: grayscale(0.85); opacity: 0.55; transform: rotate(-3deg); }
 
-  .portrait { display: block; width: 72%; margin-top: 7px; }
-  .sm .portrait { width: 78%; margin-top: 4px; }
-  .lg .portrait { width: 70%; margin-top: 9px; }
+  /* The painting fills the card inside a thin margin of card stock, and the
+     name sits on a band in the character's colour, as on a printed card. */
+  .painting {
+    position: absolute; inset: 3px;
+    width: calc(100% - 6px); height: calc(100% - 6px);
+    object-fit: cover; border-radius: 6px;
+  }
   .name {
     /* "Ambassador" has to fit the same card as "Duke". */
-    font-size: 0.5rem; letter-spacing: 0.01em; text-transform: uppercase;
-    color: color-mix(in srgb, var(--ink-colour, #23201c) 75%, #6b6153);
-    padding: 0 3px; text-align: center; max-width: 100%;
+    position: absolute; left: 3px; right: 3px; bottom: 3px;
+    padding: 3px 2px 2px; border-radius: 0 0 6px 6px;
+    background: color-mix(in srgb, var(--ink-colour, #23201c) 88%, black);
+    color: #fbf6ea; text-align: center;
+    /* Sized to the card: "AMBASSADOR", the longest name, fits on the smallest. */
+    font-size: 12cqw; line-height: 1.15; letter-spacing: 0; text-transform: uppercase;
+    white-space: nowrap;
   }
-  .sm .name { font-size: 0.4rem; }
-  .lg .name { font-size: 0.56rem; letter-spacing: 0.03em; }
+  .sm .name { padding: 2px 1px 1px; }
 
   .back {
     background: repeating-linear-gradient(45deg, var(--felt) 0 6px, var(--felt-deep) 6px 12px);
