@@ -281,66 +281,33 @@ test('guests play without an account, keep their seat across a reconnect, and le
   nameless.close();
 });
 
-test('Google sign-in is offered only when the server is set up for it', async (t) => {
-  const server = await startServer({ GOOGLE_CLIENT_ID: '', GOOGLE_CLIENT_SECRET: '' });
+test('Google sign-in is offered only when the server has a client ID', async (t) => {
+  const server = await startServer({ GOOGLE_CLIENT_ID: '' });
   t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
-
-  const client = new Client('plain');
-  const welcome = client.await_((m) => m.type === 'welcome', 'welcome');
-  await client.ready;
-  assert.equal((await welcome).google, false);
-
-  const res = await fetch(`http://127.0.0.1:${PORT}/auth/google?return=http://localhost:5173/`, { redirect: 'manual' });
-  assert.equal(res.status, 404);
-
-  const refused = client.await_((m) => m.type === 'error', 'unknown code');
-  client.send({ type: 'loginCode', code: 'made-up' });
-  assert.match((await refused).message, /expired/);
-  client.close();
-});
-
-test('the Google redirect only starts from, and returns to, the published site', async (t) => {
-  const site = 'https://rileygramlich.github.io';
-  const server = await startServer({
-    GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com',
-    GOOGLE_CLIENT_SECRET: 'test-secret',
-    PUBLIC_URL: `http://127.0.0.1:${PORT}`,
-    ALLOWED_ORIGINS: site
-  });
-  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
-  const get = (path) => fetch(`http://127.0.0.1:${PORT}${path}`, { redirect: 'manual' });
 
   const client = new Client('google');
   const welcome = client.await_((m) => m.type === 'welcome', 'welcome');
   await client.ready;
-  assert.equal((await welcome).google, true);
+  assert.equal((await welcome).googleClientId, null);
 
-  // Somebody else's site may not start a sign-in that would hand it the code.
-  assert.equal((await get(`/auth/google?return=${encodeURIComponent('https://evil.example/')}`)).status, 400);
-  assert.equal((await get('/auth/google')).status, 400);
+  const refused = client.await_((m) => m.type === 'error', 'google refusal');
+  client.send({ type: 'google', credential: 'not-a-real-token' });
+  assert.match((await refused).message, /not set up/);
+  client.close();
+});
 
-  const page = `${site}/tommy-games/#/online?table=AB12`;
-  const start = await get(`/auth/google?return=${encodeURIComponent(page)}`);
-  assert.equal(start.status, 302);
-  const google = new URL(start.headers.get('location'));
-  assert.equal(google.origin, 'https://accounts.google.com');
-  assert.equal(google.searchParams.get('redirect_uri'), `http://127.0.0.1:${PORT}/auth/google/callback`);
-  assert.equal(google.searchParams.get('client_id'), 'test-client.apps.googleusercontent.com');
-  const state = google.searchParams.get('state');
-  assert.ok(state);
+test('a forged Google token is turned away', async (t) => {
+  const server = await startServer({ GOOGLE_CLIENT_ID: 'test-client.apps.googleusercontent.com' });
+  t.after(() => { server.kill(); rmSync(dataDir, { recursive: true, force: true }); });
 
-  // A made-up state is refused outright.
-  assert.equal((await get('/auth/google/callback?state=nope&code=x')).status, 400);
+  const client = new Client('forger');
+  const welcome = client.await_((m) => m.type === 'welcome', 'welcome');
+  await client.ready;
+  assert.equal((await welcome).googleClientId, 'test-client.apps.googleusercontent.com');
 
-  // Cancelling on Google's page comes back to the same table with a reason.
-  const cancelled = await get(`/auth/google/callback?state=${state}&error=access_denied`);
-  assert.equal(cancelled.status, 302);
-  const back = new URL(cancelled.headers.get('location'));
-  assert.equal(back.origin, site);
-  assert.match(back.hash, /^#\/online\?table=AB12&login_error=/);
-
-  // The state was used up.
-  assert.equal((await get(`/auth/google/callback?state=${state}&code=x`)).status, 400);
+  const refused = client.await_((m) => m.type === 'error', 'forged token refusal');
+  client.send({ type: 'google', credential: 'eyJhbGciOiJSUzI1NiJ9.eyJzdWIiOiIxIn0.c2lnbmF0dXJl' });
+  assert.match((await refused).message, /didn't work/);
 
   // And a Google account cannot be reached by the password route.
   const noPassword = client.await_((m) => m.type === 'error', 'password route refusal');

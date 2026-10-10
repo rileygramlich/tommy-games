@@ -6,8 +6,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { WebSocketServer } from 'ws';
 import { loadStore, flush, storeLabel } from './store.js';
-import { register, login, guest, resume, revoke, publicUser } from './auth.js';
-import { googleEnabled, callbackUrl, allowedReturn, startGoogle, finishGoogle, redeemLoginCode } from './google.js';
+import { register, login, guest, googleSignIn, googleClientId, resume, revoke, publicUser } from './auth.js';
 import { validate, record, tooMany, readBody } from './suggestions.js';
 import { createDictionary } from '../src/lib/games/quiddler/dictionary.js';
 import * as quiddlerEngine from '../src/lib/games/quiddler/engine.js';
@@ -88,26 +87,6 @@ const http = createServer(async (req, res) => {
     return;
   }
 
-  if (path === '/auth/google' || path === '/auth/google/callback') {
-    const text = (status, message) => {
-      res.writeHead(status, { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' });
-      res.end(`${message}\n`);
-    };
-    const go = (location) => {
-      res.writeHead(302, { location, 'cache-control': 'no-store' });
-      res.end();
-    };
-    if (!googleEnabled) return text(404, 'Google sign-in is not set up on this server.');
-    const params = new URL(req.url ?? '/', 'http://server').searchParams;
-    if (path === '/auth/google') {
-      const returnTo = allowedReturn(params.get('return') ?? '', ALLOWED);
-      if (!returnTo) return text(400, 'Sign in from the Tommy Games site.');
-      return go(startGoogle(returnTo));
-    }
-    const result = await finishGoogle(params);
-    return result.location ? go(result.location) : text(result.status, result.message);
-  }
-
   if (path === '/suggest') {
     const cors = corsHeaders(origin);
     if (req.method === 'OPTIONS') {
@@ -186,14 +165,14 @@ wss.on('connection', (ws, request) => {
     ?? 'unknown';
   ws.isAlive = true;
   ws.on('pong', () => { ws.isAlive = true; });
-  send(ws, { type: 'welcome', server: 'tommy-games', games: Object.keys(ENGINES), google: googleEnabled });
+  send(ws, { type: 'welcome', server: 'tommy-games', games: Object.keys(ENGINES), googleClientId });
 
   ws.on('message', (raw) => {
     let msg;
     try { msg = JSON.parse(raw); } catch { return fail(ws, 'Malformed message.'); }
 
     try {
-      if (['register', 'login', 'auth', 'guest', 'loginCode'].includes(msg.type) && tooManyAttempts(ws.address)) {
+      if (['register', 'login', 'auth', 'guest', 'google'].includes(msg.type) && tooManyAttempts(ws.address)) {
         return fail(ws, 'Too many attempts. Wait a minute and try again.');
       }
 
@@ -208,10 +187,13 @@ wss.on('connection', (ws, request) => {
           if (result.error) return fail(ws, result.error);
           return enterSession(ws, result);
         }
-        case 'loginCode': {
-          const result = redeemLoginCode(msg.code);
-          if (result.error) return fail(ws, result.error);
-          return enterSession(ws, result);
+        case 'google': {
+          // Checking the token with Google is asynchronous; answer when it is done.
+          googleSignIn(msg.credential).then((result) => {
+            if (result.error) fail(ws, result.error);
+            else enterSession(ws, result);
+          });
+          return;
         }
         case 'guest': {
           const result = guest(msg.name);
@@ -343,7 +325,6 @@ setInterval(() => {
 http.listen(PORT, () => {
   console.log(`Tommy Games server on :${PORT}`);
   if (ALLOWED.length) console.log(`allowed origins: ${ALLOWED.join(', ')}`);
-  console.log(googleEnabled ? `Google sign-in on, callback ${callbackUrl}` : 'Google sign-in off');
 });
 
 // Hosts stop a container by asking politely first. Write the accounts out and

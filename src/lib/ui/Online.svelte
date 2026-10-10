@@ -21,34 +21,14 @@
   // A table code can arrive in the link itself: #/online?table=AB12. Whoever
   // opens it signs in and lands at the table without typing anything.
   let pendingCode = $state('');
-  // Back from Google: a one-time code (or why it failed) arrives the same way.
-  let pendingLogin = $state('');
-  let googleError = $state('');
 
   onMount(() => {
     const hash = window.location.hash ?? '';
     const query = hash.includes('?') ? new URLSearchParams(hash.slice(hash.indexOf('?') + 1)) : null;
     pendingCode = (query?.get('table') ?? '').trim().toUpperCase();
-    pendingLogin = query?.get('login') ?? '';
-    googleError = query?.get('login_error') ?? '';
-    if (query && (query.has('login') || query.has('login_error'))) {
-      // Take the code out of the address bar and history; it is single-use anyway.
-      query.delete('login');
-      query.delete('login_error');
-      const rest = query.toString();
-      const route = hash.slice(0, hash.indexOf('?'));
-      history.replaceState(null, '', `${window.location.pathname}${route}${rest ? `?${rest}` : ''}`);
-    }
     if (settings.serverUrl) online.connect(settings.serverUrl);
   });
   onDestroy(() => online.close());
-
-  $effect(() => {
-    if (!pendingLogin || online.status !== 'online') return;
-    const code = pendingLogin;
-    pendingLogin = '';
-    online.redeem(code);
-  });
 
   $effect(() => {
     if (!pendingCode || !online.user || online.room) return;
@@ -89,6 +69,34 @@
     else online.login(username, password);
     password = '';
   }
+  // Google's own button, drawn by Google's script into this element. The
+  // script loads once, the first time the server says it offers Google.
+  function googleButton(node, clientId) {
+    let cancelled = false;
+    const render = () => {
+      const id = window.google?.accounts?.id;
+      if (cancelled || !id) return;
+      id.initialize({ client_id: clientId, callback: (response) => online.google(response.credential) });
+      id.renderButton(node, {
+        theme: 'filled_black', size: 'large', shape: 'pill', text: 'signin_with',
+        width: Math.max(200, Math.min(node.clientWidth || 320, 400))
+      });
+    };
+    if (window.google?.accounts?.id) render();
+    else {
+      let script = document.querySelector('script[data-google-signin]');
+      if (!script) {
+        script = document.createElement('script');
+        script.src = 'https://accounts.google.com/gsi/client';
+        script.async = true;
+        script.dataset.googleSignin = '';
+        document.head.appendChild(script);
+      }
+      script.addEventListener('load', render, { once: true });
+    }
+    return { destroy() { cancelled = true; } };
+  }
+
   function sendChat(e) {
     e.preventDefault();
     if (chatText.trim()) online.chat(chatText);
@@ -154,21 +162,14 @@
           {/if}
         </div>
       </form>
-      {#if online.google}
+      {#if online.googleClientId}
         <div class="google stack">
           <span class="muted tiny">or keep your record with Google</span>
-          <a class="btn google-btn" href={online.googleUrl(window.location.href)}>
-            <svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true">
-              <path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.7-1.57 2.68-3.88 2.68-6.62z"/>
-              <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.8.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.33A9 9 0 0 0 9 18z"/>
-              <path fill="#FBBC05" d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.95H.96a9 9 0 0 0 0 8.1l3.01-2.33z"/>
-              <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58A9 9 0 0 0 .96 4.95l3.01 2.33C4.68 5.16 6.66 3.58 9 3.58z"/>
-            </svg>
-            Continue with Google
-          </a>
+          {#key online.googleClientId}
+            <div class="google-button" use:googleButton={online.googleClientId}></div>
+          {/key}
         </div>
       {/if}
-      {#if googleError}<p class="err tiny">{googleError}</p>{/if}
       {#if online.error}<p class="err tiny">{online.error}</p>{/if}
       <p class="muted tiny">
         {#if mode === 'guest'}
@@ -299,10 +300,7 @@
   .status.error, .status.closed { color: var(--rose); }
   .code { font-family: var(--tabular); letter-spacing: 0.12em; }
   .google { gap: 0.5rem; padding-top: 0.25rem; }
-  .google-btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 0.6rem;
-    min-height: 44px; max-width: 400px; background: #fff; color: #1f1f1f; text-decoration: none;
-  }
+  .google-button { min-height: 44px; max-width: 400px; }
   .seats { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .seat {
     display: flex; align-items: center; gap: 0.4rem;
