@@ -35,6 +35,7 @@ export class Online {
   connect(url) {
     this.url = url;
     this.#closed = false;
+    this.#attempts = 0;
     this.#open();
     // A phone drops its socket in the background; come straight back when it
     // is looked at again or gets its network back, instead of waiting out a retry.

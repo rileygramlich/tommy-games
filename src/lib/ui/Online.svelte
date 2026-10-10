@@ -1,7 +1,7 @@
 <script>
   import { onMount, onDestroy } from 'svelte';
   import { Online, RemoteTable } from '../net/online.svelte.js';
-  import { settings } from '../stores/settings.svelte.js';
+  import { settings, saveSettings, DEFAULT_SERVER } from '../stores/settings.svelte.js';
   import { GAMES, GAME_LIST, getGame } from '../games/registry.js';
 
   let { go } = $props();
@@ -61,6 +61,16 @@
   const room = $derived(online.room);
   const isHost = $derived(!!room && !!online.user && room.hostId === online.user.id);
   const canStart = $derived(!!room && room.seats.length >= room.minSeats);
+
+  // Someone typed their own server address, and it isn't answering.
+  const customServerFailing = $derived(
+    !!DEFAULT_SERVER && settings.serverUrl !== DEFAULT_SERVER && !!online.error && online.status !== 'online'
+  );
+  function useDefaultServer() {
+    saveSettings({ serverUrl: DEFAULT_SERVER });
+    online.close();
+    online.connect(DEFAULT_SERVER);
+  }
 
   function submitAuth(e) {
     e.preventDefault();
@@ -132,7 +142,14 @@
         </strong>
         <span class="status {online.status}">{online.status}</span>
       </div>
-      {#if online.waking}
+      {#if customServerFailing}
+        <div class="stack custom-server">
+          <p class="tiny">
+            This device is set to a different server, <code>{settings.serverUrl}</code>, and it isn't answering.
+          </p>
+          <button class="btn primary small" type="button" onclick={useDefaultServer}>Use the Tommy Games server</button>
+        </div>
+      {:else if online.waking}
         <p class="muted tiny">Waking the game server up. The first visit after a quiet spell can take up to a minute.</p>
       {/if}
       <form class="stack" onsubmit={submitAuth}>
@@ -300,6 +317,8 @@
   .status.error, .status.closed { color: var(--rose); }
   .code { font-family: var(--tabular); letter-spacing: 0.12em; }
   .google { gap: 0.5rem; padding-top: 0.25rem; }
+  .custom-server { gap: 0.5rem; align-items: flex-start; }
+  .custom-server code { word-break: break-all; }
   .google-button { min-height: 44px; max-width: 400px; }
   .seats { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .seat {
