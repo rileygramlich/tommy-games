@@ -92,7 +92,12 @@
         >
           {#if cell !== EMPTY}
             <span class="piece" style="background:{COLOURS[seatOf(cell)]}">
-              {#if isKing(cell)}<span class="crown" aria-hidden="true">♔</span>{/if}
+              {#if isKing(cell)}
+                <!-- Tabler Icons "crown" (MIT): sized by the piece, not by a font. -->
+                <svg class="crown" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 6l4 6l5 -4l-2 10h-14l-2 -10l5 4z" />
+                </svg>
+              {/if}
             </span>
           {:else if destinations.has(i)}
             <span class="dot"></span>
@@ -138,7 +143,10 @@
 
   .board {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    /* minmax(0, 1fr): every square the same size, whatever is in it. Plain 1fr
+       lets a square grow to fit its content, which is what a crown did. */
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    grid-template-rows: repeat(8, minmax(0, 1fr));
     gap: 0;
     padding: 10px;
     max-width: 520px;
@@ -148,6 +156,8 @@
   }
   .cell {
     position: relative;
+    min-width: 0;
+    min-height: 0;
     border: 0;
     display: grid;
     place-items: center;
@@ -170,7 +180,11 @@
     display: grid; place-items: center;
     animation: settle 0.16s ease-out;
   }
-  .crown { font-size: 0.9rem; line-height: 1; color: rgba(0, 0, 0, 0.55); }
+  .crown {
+    width: 58%; height: 58%;
+    fill: none; stroke: rgba(0, 0, 0, 0.55); stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+  }
   .dot { width: 26%; height: 26%; border-radius: 50%; background: color-mix(in srgb, var(--brass-soft) 70%, transparent); }
   /* A jump destination is worth distinguishing from a quiet step. */
   .cell.capture .dot { background: var(--brass); width: 34%; height: 34%; }
