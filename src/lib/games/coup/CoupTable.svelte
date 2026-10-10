@@ -1,5 +1,6 @@
 <script>
   import InfluenceCard from './InfluenceCard.svelte';
+  import CheatSheet from './CheatSheet.svelte';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
   import { CHARACTERS, ACTIONS } from './characters.js';
@@ -266,6 +267,11 @@
         {/if}
       {/if}
     </section>
+
+    <details class="panel log-panel">
+      <summary>Cheat sheet — who does what</summary>
+      <CheatSheet characters={v.characters} factions={v.factions} />
+    </details>
 
     <details class="panel log-panel">
       <summary>What was said</summary>

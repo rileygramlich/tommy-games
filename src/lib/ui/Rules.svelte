@@ -1,5 +1,7 @@
 <script>
   import { LETTERS } from '../games/quiddler/deck.js';
+  import { SETS } from '../games/coup/characters.js';
+  import CheatSheet from '../games/coup/CheatSheet.svelte';
   let { game, go } = $props();
 </script>
 
@@ -30,6 +32,13 @@
       {/if}
     </section>
   {/each}
+
+  {#if game.id === 'coup'}
+    <section>
+      <h2>Cheat sheet</h2>
+      <CheatSheet characters={SETS.classic.characters} />
+    </section>
+  {/if}
 
   <div class="row wrap">
     <button class="btn primary" onclick={() => go(`#/play/${game.id}`)}>Play {game.name}</button>
