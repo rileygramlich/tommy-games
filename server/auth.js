@@ -1,13 +1,5 @@
 import { randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
-import { OAuth2Client } from 'google-auth-library';
 import { getData, touch } from './store.js';
-
-// Sign in with Google is on when GOOGLE_CLIENT_ID is set. The ID is public:
-// the server hands it to the browser in its welcome message, and checks that
-// every Google token it is shown was issued for this ID and no other.
-const GOOGLE_CLIENT_ID = (process.env.GOOGLE_CLIENT_ID ?? '').trim();
-const google = GOOGLE_CLIENT_ID ? new OAuth2Client(GOOGLE_CLIENT_ID) : null;
-export const googleClientId = GOOGLE_CLIENT_ID || null;
 
 const TOKEN_TTL = 1000 * 60 * 60 * 24 * 30; // 30 days
 
@@ -62,29 +54,19 @@ export function login(username, password) {
   return { user, token: issueToken(user.id) };
 }
 
-/**
- * A Google ID token (the "credential" from Google's button) in, a session out.
- * Keyed by Google's account ID, so the name shown can change without making a
- * second account. Nothing else from Google is kept: no email, no photo.
- */
-export async function googleSignIn(credential) {
-  if (!google) return { error: 'Google sign-in is not set up on this server.' };
-  let payload;
-  try {
-    const ticket = await google.verifyIdToken({ idToken: String(credential ?? ''), audience: GOOGLE_CLIENT_ID });
-    payload = ticket.getPayload();
-  } catch {
-    return { error: "Google sign-in didn't work. Try again." };
-  }
-  if (!payload?.sub) return { error: "Google sign-in didn't work. Try again." };
+/** The account for a Google profile Google has vouched for, made on first sign-in. */
+export function googleAccount(payload) {
+  if (!payload?.sub) throw new Error('Google sent no account ID.');
   const data = getData();
   const id = `google:${payload.sub}`;
   if (!data.users[id]) {
+    // Keyed by Google's account ID, so a later name change is not a new account.
+    // Nothing else from Google is kept: no email, no photo.
     const display = String(payload.given_name || payload.name || 'Player').trim().slice(0, 16);
     data.users[id] = { id, display, google: true, createdAt: Date.now(), stats: {} };
     touch();
   }
-  return { user: data.users[id], token: issueToken(id) };
+  return data.users[id];
 }
 
 export function issueToken(userId) {

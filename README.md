@@ -121,7 +121,8 @@ docker run -p 8787:8787 -v tommy-data:/data tommy-games-server
 | --- | --- | --- |
 | `PORT` | `8787` | Port to listen on. Most hosts set this for you. |
 | `MONGODB_URI` | *(unset)* | Keep accounts in MongoDB instead of a file, e.g. `mongodb+srv://…/tommy-games`. For hosts whose disk is wiped on restart. |
-| `GOOGLE_CLIENT_ID` | *(unset)* | Turns on Sign in with Google. The server sends it to the site and checks every Google token against it. |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | *(unset)* | Turn on Sign in with Google. Both are needed. |
+| `PUBLIC_URL` | `RENDER_EXTERNAL_URL` | This server's own https address, for Google's callback. Render sets the fallback itself. |
 | `DATA_DIR` | `server/data` | Where accounts are kept when `MONGODB_URI` is unset. Point it at a volume that survives restarts. |
 | `ALLOWED_ORIGINS` | *(any)* | Comma-separated list of sites allowed to connect. |
 | `BOT_DELAY` / `TRICK_PAUSE` | `900` / `1600` | Pacing, in milliseconds. |
@@ -182,12 +183,15 @@ first name, not the email.
    External, app name *Tommy Games*, your email as support and developer
    contact. Basic sign-in needs no extra scopes and no verification.
 2. **Credentials → Create credentials → OAuth client ID**, type *Web
-   application*. Under **Authorized JavaScript origins** add
-   `https://rileygramlich.github.io` and, for local play, `http://localhost:5173`.
-   No redirect URIs are needed: the button hands the browser a token directly.
-3. Copy the client ID (`…apps.googleusercontent.com`) into the server's
-   `GOOGLE_CLIENT_ID` on Render. The button appears on the next page load; there
-   is nothing to rebuild on the site.
+   application*. Under **Authorized redirect URIs** add the server's callback,
+   `https://<your-server>.onrender.com/auth/google/callback`, and for local play
+   `http://localhost:8787/auth/google/callback` (run the server with
+   `PUBLIC_URL=http://localhost:8787`). It is the classic redirect flow: the
+   button sends you to Google, Google sends you back to the server, and the
+   server sends you back to the table with a single-use code.
+3. Copy the client ID and client secret into the server's `GOOGLE_CLIENT_ID`
+   and `GOOGLE_CLIENT_SECRET` on Render. The button appears on the next page
+   load; there is nothing to rebuild on the site.
 
 Phones drop their connection whenever the browser goes to the background, so a
 dropped connection keeps your seat: come back, and you sit down where you were.

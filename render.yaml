@@ -16,7 +16,11 @@ services:
       # mongodb+srv://…/tommy-games — the database name goes after the host.
       - key: MONGODB_URI
         sync: false
-      # Optional. The OAuth client ID (…apps.googleusercontent.com) that turns on
-      # Sign in with Google. Leave it blank and the button simply doesn't show.
+      # Optional, both or neither: the OAuth client that turns on Sign in with
+      # Google. Leave them blank and the button simply doesn't show. Its
+      # redirect URI is this service's address + /auth/google/callback (Render
+      # tells the server its own address in RENDER_EXTERNAL_URL).
       - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
         sync: false
