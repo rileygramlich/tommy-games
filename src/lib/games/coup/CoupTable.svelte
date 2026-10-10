@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import InfluenceCard from './InfluenceCard.svelte';
   import CheatSheet from './CheatSheet.svelte';
   import GameLog from '../../components/GameLog.svelte';
@@ -112,7 +113,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Coup</div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row meta tiny muted">
@@ -284,8 +285,7 @@
       <div class="panel result center">
         <div class="tag">Coup</div>
         <h2>
-          {v.winners.map((i) => v.players[i].name).join(' & ')}
-          {v.winners.length > 1 ? 'win together' : 'wins'}
+          {youGrammar(`${v.winners.map((i) => v.players[i].name).join(' & ')} ${v.winners.length > 1 ? 'win together' : 'wins'}`)}
         </h2>
         {#if v.factions && v.winners.length > 1}
           <p class="tiny muted">{v.factionNames[v.players[v.winners[0]].allegiance]} — the last side standing.</p>

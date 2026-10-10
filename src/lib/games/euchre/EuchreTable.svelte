@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar, plural } from '../../text.js';
   import PlayingCard from '../../components/PlayingCard.svelte';
   import Seat from '../../components/Seat.svelte';
   import GameLog from '../../components/GameLog.svelte';
@@ -34,14 +35,14 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Hand {v.hand} <span class="muted">· to {v.target}</span></div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row teams">
         {#each v.teams as team (team.team)}
           <div class="team" class:mine={team.team === myTeam}>
             <div class="tiny muted">{team.names.join(' & ')}</div>
-            <div class="num score">{team.score} <span class="muted tiny">· {team.tricks} tricks</span></div>
+            <div class="num score">{team.score} <span class="muted tiny">· {plural(team.tricks, 'trick')}</span></div>
           </div>
         {/each}
       </div>
@@ -65,7 +66,7 @@
           player={p}
           active={v.turn === p.seat && !['handEnd', 'gameOver'].includes(v.phase)}
           dealer={v.dealer === p.seat}
-          detail={`${p.seat === partnerOf(v.seat) ? 'partner' : 'against'} · ${p.tricks} tricks${v.sitter === p.seat ? ' · sitting out' : ''}`}
+          detail={`${p.seat === partnerOf(v.seat) ? 'partner' : 'against'} · ${plural(p.tricks, 'trick')}${v.sitter === p.seat ? ' · sitting out' : ''}`}
         />
       {/each}
     </div>

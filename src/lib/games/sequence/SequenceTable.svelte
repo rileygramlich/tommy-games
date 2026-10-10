@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import PlayingCard from '../../components/PlayingCard.svelte';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
@@ -51,7 +52,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Sequence</div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row players">

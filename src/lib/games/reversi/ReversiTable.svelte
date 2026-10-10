@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
   import { square } from './engine.js';
@@ -24,7 +25,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Reversi</div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row score">

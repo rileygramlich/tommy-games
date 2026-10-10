@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar, plural } from '../../text.js';
   import PlayingCard from '../../components/PlayingCard.svelte';
   import Seat from '../../components/Seat.svelte';
   import GameLog from '../../components/GameLog.svelte';
@@ -59,7 +60,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="round">Round {v.round} <span class="muted">of {v.rounds}</span></div>
-          <div class="status">{statusLine()}</div>
+          <div class="status">{youGrammar(statusLine())}</div>
         </div>
       </div>
       <div class="row trump">
@@ -94,7 +95,7 @@
         <div class="bid-summary fade-in">
           {#if openBidding}
             <div class="tiny muted">Bids so far</div>
-            <div class="bid-total num">{bidTotal} <span class="muted">/ {v.round} tricks</span></div>
+            <div class="bid-total num">{bidTotal} <span class="muted">/ {plural(v.round, 'trick')}</span></div>
           {:else}
             <div class="tiny muted">{v.bidding === 'concealed' ? 'Concealed bids' : 'Bidding all at once'}</div>
             <div class="bid-total num">{v.bidsIn} <span class="muted">/ {v.players.length} in</span></div>

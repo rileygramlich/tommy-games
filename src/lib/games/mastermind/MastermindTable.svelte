@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
 
@@ -56,7 +57,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Round {v.round} <span class="muted">of {v.rounds}</span></div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row scores">

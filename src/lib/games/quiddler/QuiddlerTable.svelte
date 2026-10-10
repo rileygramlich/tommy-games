@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import LetterCard from '../../components/LetterCard.svelte';
   import Seat from '../../components/Seat.svelte';
   import GameLog from '../../components/GameLog.svelte';
@@ -211,7 +212,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="round">Round {v.round} <span class="muted">of {v.rounds} · {v.handSize} cards</span></div>
-          <div class="status">{statusLine()}</div>
+          <div class="status">{youGrammar(statusLine())}</div>
         </div>
       </div>
       <div class="piles">

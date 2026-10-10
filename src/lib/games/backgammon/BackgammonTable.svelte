@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
 
@@ -58,7 +59,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Game {v.gameNo} <span class="muted">· match to {v.target}</span></div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row tallies">
@@ -178,7 +179,7 @@
   {#if v.phase === 'gameEnd'}
     <div class="overlay fade-in">
       <div class="panel result center">
-        <h2>{v.players[v.lastResult.winner].name} wins {v.lastResult.kind}</h2>
+        <h2>{youGrammar(`${v.players[v.lastResult.winner].name} wins ${v.lastResult.kind}`)}</h2>
         <p class="num big">{v.players[0].score} – {v.players[1].score}</p>
         <button class="btn primary" onclick={() => table.send({ type: 'continue' })}>
           {Math.max(v.players[0].score, v.players[1].score) >= v.target ? 'Final' : 'Next game'}
@@ -191,7 +192,7 @@
     <div class="overlay fade-in">
       <div class="panel result center">
         <div class="tag">Backgammon</div>
-        <h2>{v.players[v.winners[0]].name} takes the match</h2>
+        <h2>{youGrammar(`${v.players[v.winners[0]].name} takes the match`)}</h2>
         <p class="num big">{v.players[0].score} – {v.players[1].score}</p>
         <button class="btn primary" onclick={onexit}>Back to the shelf</button>
       </div>

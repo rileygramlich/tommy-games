@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
   import { SIZE, EMPTY, seatOf, isKing, isPlayable, square } from './engine.js';
@@ -59,7 +60,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Checkers</div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       <div class="row score">
@@ -118,7 +119,7 @@
     <div class="overlay fade-in">
       <div class="panel sheet center">
         <div class="tag">Checkers</div>
-        <h2>{v.winners.length > 1 ? 'A draw' : `${v.players[v.winners[0]].name} wins`}</h2>
+        <h2>{v.winners.length > 1 ? 'A draw' : youGrammar(`${v.players[v.winners[0]].name} wins`)}</h2>
         <p class="num big">{v.players[0].pieces} – {v.players[1].pieces}</p>
         <button class="btn primary" onclick={onexit}>Back to the shelf</button>
       </div>

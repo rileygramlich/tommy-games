@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../../text.js';
   import PlayingCard from '../../components/PlayingCard.svelte';
   import GameLog from '../../components/GameLog.svelte';
   import Curtain from '../../components/Curtain.svelte';
@@ -40,7 +41,7 @@
         <button class="btn ghost small" onclick={onexit}>← Leave</button>
         <div>
           <div class="title">Deal {v.deal} <span class="muted">· to {v.target}</span></div>
-          <div class="status">{status()}</div>
+          <div class="status">{youGrammar(status())}</div>
         </div>
       </div>
       {#if v.starter}
@@ -146,7 +147,7 @@
     <div class="overlay fade-in">
       <div class="panel result center">
         <div class="tag">Cribbage</div>
-        <h2>{v.players[v.winners[0]].name} is home</h2>
+        <h2>{youGrammar(`${v.players[v.winners[0]].name} is home`)}</h2>
         <p class="num big">{v.players[0].score} – {v.players[1].score}</p>
         <button class="btn primary" onclick={onexit}>Back to the shelf</button>
       </div>

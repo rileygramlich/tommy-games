@@ -1,4 +1,5 @@
 <script>
+  import { youGrammar } from '../text.js';
   let { log = [] } = $props();
   let box = $state(null);
   $effect(() => {
@@ -9,7 +10,7 @@
 
 <div class="log" bind:this={box}>
   {#each log as entry, i (i)}
-    <div class="line">{entry.text}</div>
+    <div class="line">{youGrammar(entry.text)}</div>
   {/each}
 </div>
 
