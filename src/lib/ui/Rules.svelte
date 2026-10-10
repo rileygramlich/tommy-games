@@ -51,7 +51,7 @@
   {#if credits.length}
     <section class="credits">
       <h2>The pictures on the cards</h2>
-      <p class="muted">Public-domain paintings, cropped to fit. None of them is the art of the published game.</p>
+      <p class="muted">Public-domain paintings and illustrations, cropped to fit. None of them is the art of the published game.</p>
       <ul>
         {#each credits as c (c.role)}
           <li><b>{c.role}</b> — <a href={c.page} target="_blank" rel="noopener">{c.title}</a>, {c.artist}, {c.year}. {c.museum}.</li>

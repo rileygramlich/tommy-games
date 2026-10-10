@@ -195,7 +195,7 @@ A table closes after ten minutes with nobody connected.
 
 ## Credits
 
-The pictures on the cards are public-domain paintings, found on Wikimedia
+The pictures on the cards are public-domain paintings and illustrations, found on Wikimedia
 Commons and cropped to card shape (`public/art`, listed in `src/lib/art.js`).
 None of them is drawn for this site, and none is the art of the published
 games. Each game's rules page credits its own.
@@ -209,7 +209,7 @@ games. Each game's rules page credits its own.
 | Contessa | Jean-Auguste-Dominique Ingres, *Comtesse d'Haussonville*, 1845 — The Frick Collection |
 | Inquisitor | El Greco, *Cardinal Fernando Niño de Guevara*, c. 1600 — The Metropolitan Museum of Art |
 | Embezzler | after Marinus van Reymerswaele, *The Tax Collectors*, 1600s — National Museum in Warsaw |
-| Wizard | John William Waterhouse, *The Magic Circle*, 1886 — Tate Britain |
+| Wizard | Arthur Rackham, *The Wanderer*, from *Siegfried & the Twilight of the Gods*, 1911 (Wotan as the wanderer Tolkien drew Gandalf from) |
 | Jester | Jan Matejko, *Stańczyk*, 1862 — National Museum in Warsaw |
 
 The checkers crown is Tabler Icons' `crown` (MIT).

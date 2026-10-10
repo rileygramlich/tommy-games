@@ -1,4 +1,4 @@
-// Card art: public-domain paintings from museum collections, found on Wikimedia
+// Card art: public-domain paintings and illustrations, found on Wikimedia
 // Commons and cropped to card shape (public/art, 300×420). None of it is drawn
 // for this site, and none of it is the art of the published games, which is
 // theirs. Credit is not legally required for public-domain work; it is given
@@ -23,8 +23,11 @@ export const ART = {
     'https://commons.wikimedia.org/wiki/File:Cardinal_Fernando_Ni%C3%B1o_de_Guevara_(1541%E2%80%931609)_MET_DT854.jpg'),
   embezzler: art('embezzler', 'The Tax Collectors', 'after Marinus van Reymerswaele', '1600s', 'National Museum in Warsaw',
     'https://commons.wikimedia.org/wiki/File:Marinus_Claeszoon_van_Reymerswaele_-_Tax_collectors_-_M.Ob.592_MNW_-_National_Museum_in_Warsaw.jpg'),
-  wizard: art('wizard', 'The Magic Circle', 'John William Waterhouse', '1886', 'Tate Britain, London',
-    'https://commons.wikimedia.org/wiki/File:John_William_Waterhouse_-_Magic_Circle.JPG'),
+  // Wotan as the Wanderer: the grey-bearded traveller in a wide hat whom Tolkien
+  // had in mind for Gandalf, his "Odinic wanderer". Gandalf himself is not
+  // public domain; this is the closest the card can get.
+  wizard: art('wizard', 'The Wanderer, from Siegfried & the Twilight of the Gods', 'Arthur Rackham', '1911', 'illustration, published by Heinemann',
+    'https://commons.wikimedia.org/wiki/File:Siegfried_and_the_Twilight_of_the_Gods_p_024.jpg'),
   jester: art('jester', 'Stańczyk', 'Jan Matejko', '1862', 'National Museum in Warsaw',
     'https://commons.wikimedia.org/wiki/File:Jan_Matejko_-_Sta%C5%84czyk_-_Google_Art_Project.jpg')
 };
