@@ -68,7 +68,7 @@
             <span class="pip" style="background:{COLOURS[p.seat]}"></span>
             <div>
               <div class="tiny">{p.name}</div>
-              <div class="tiny muted num">{p.score} pts · {p.pips} pips{p.off ? ` · ${p.off} off` : ''}</div>
+              <div class="tiny muted num">{p.score}&nbsp;pts · {p.pips}&nbsp;pips{p.off ? ` · ${p.off}\u00a0off` : ''}</div>
             </div>
           </div>
         {/each}
