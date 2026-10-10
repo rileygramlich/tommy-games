@@ -1,5 +1,5 @@
 <script>
-  import { settings, saveSettings } from '../stores/settings.svelte.js';
+  import { settings, saveSettings, DEFAULT_SERVER } from '../stores/settings.svelte.js';
   let { go } = $props();
 
   let serverUrl = $state(settings.serverUrl);
@@ -7,6 +7,7 @@
 
   function save() {
     saveSettings({ serverUrl: serverUrl.trim() });
+    serverUrl = settings.serverUrl;
     saved = true;
     setTimeout(() => (saved = false), 1600);
   }
@@ -47,14 +48,19 @@
     <div>
       <strong class="small-head">Online play</strong>
       <p class="muted tiny">
-        GitHub Pages can only serve files, so games with friends need a small game server running
-        somewhere. Point this at yours — <code>wss://your-server</code> — or run
-        <code>npm run server</code> and use <code>ws://localhost:8787</code>.
+        {#if DEFAULT_SERVER}
+          Already set up: online play uses the Tommy Games server. Change this only to play on a
+          server of your own; clear it and save to go back.
+        {:else}
+          Games with friends need a small game server running somewhere. Point this at yours —
+          <code>wss://your-server</code> — or run <code>npm run server</code> and use
+          <code>ws://localhost:8787</code>.
+        {/if}
       </p>
     </div>
     <label class="field">
       <span>Server address</span>
-      <input type="text" bind:value={serverUrl} placeholder="wss://tommy-games.example.com" />
+      <input type="text" bind:value={serverUrl} placeholder={DEFAULT_SERVER || 'wss://tommy-games.example.com'} />
     </label>
     <div class="row">
       <button class="btn primary" onclick={save}>Save</button>
