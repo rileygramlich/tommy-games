@@ -201,8 +201,11 @@
   .gridwrap { display: grid; place-items: center; }
   .grid {
     display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    width: min(94vw, 540px);
+    /* Sized to the panel, not the screen: 94vw ignored the page margin and the
+       panel's padding, so on a phone the grid ran into the panel's edge. */
+    grid-template-columns: repeat(9, minmax(0, 1fr));
+    grid-template-rows: repeat(9, minmax(0, 1fr));
+    width: min(100%, 540px);
     aspect-ratio: 1;
     background: var(--paper);
     /* The outer frame and the nine boxes are drawn heavy; the rest hairline. */
@@ -245,7 +248,8 @@
   /* ---------------------------------------------------------------- pad */
 
   .pad { display: grid; gap: 0.6rem; justify-items: center; }
-  .keys { display: grid; grid-template-columns: repeat(9, 1fr); gap: 0.3rem; width: min(94vw, 540px); }
+  .keys { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 0.3rem; width: min(100%, 540px); }
+  .gridwrap, .pad { min-width: 0; }
   .key {
     position: relative;
     display: grid; place-items: center;
