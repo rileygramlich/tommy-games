@@ -214,7 +214,7 @@
   .secret-row { display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap; padding-bottom: 0.5rem; border-bottom: 1px solid color-mix(in srgb, #f0e6d2 22%, transparent); }
   .rows { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.3rem; max-height: 46vh; overflow-y: auto; }
   .guessrow { display: flex; align-items: center; gap: 0.6rem; }
-  .guessrow.blank { opacity: 0.35; }
+  .guessrow.blank { opacity: 0.5; }
   .idx { width: 1.4em; text-align: right; font-size: 0.7rem; opacity: 0.6; }
 
   .pegs { display: flex; gap: 0.3rem; }
@@ -230,7 +230,7 @@
   }
   .peg.empty {
     background: color-mix(in srgb, black 22%, transparent);
-    border-style: dashed; border-color: color-mix(in srgb, #f0e6d2 30%, transparent);
+    border-style: dashed; border-color: color-mix(in srgb, #f0e6d2 48%, transparent);
     box-shadow: none;
   }
   .peg.hidden { background: color-mix(in srgb, black 32%, transparent); color: var(--brass-soft); }
@@ -260,7 +260,9 @@
   .big-num { font-family: var(--serif); font-size: 1.5rem; }
 
   @media (max-width: 640px) {
-    .rows { max-height: 40dvh; }
+    /* All ten rows, and the page scrolls. A scrolling list inside a scrolling
+       page cut row 10 in half and is easy to miss with a thumb. */
+    .rows { max-height: none; overflow: visible; }
     .peg { width: clamp(26px, 7.5vw, 30px); height: clamp(26px, 7.5vw, 30px); }
     .peg.pick, .pegs.big .peg { width: clamp(34px, 10vw, 38px); height: clamp(34px, 10vw, 38px); }
     .board { padding: 0.7rem; }
