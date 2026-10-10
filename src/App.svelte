@@ -17,7 +17,10 @@
   let loadError = $state('');
 
   function parse(hash) {
-    const parts = (hash || '#/').replace(/^#\/?/, '').split('/').filter(Boolean);
+    // Ignore any ?query: invite links are #/online?table=AB12, and the screen
+    // reads the query itself.
+    const path = (hash || '#/').replace(/^#\/?/, '').split('?')[0];
+    const parts = path.split('/').filter(Boolean);
     return { screen: parts[0] ?? 'home', arg: parts[1] ?? null };
   }
 

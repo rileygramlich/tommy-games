@@ -21,11 +21,14 @@
   // A table code can arrive in the link itself: #/online?table=AB12. Whoever
   // opens it signs in and lands at the table without typing anything.
   let pendingCode = $state('');
+  // Kept until they are at the table, so the screen can say what they were invited to.
+  let invitedTo = $state('');
 
   onMount(() => {
     const hash = window.location.hash ?? '';
     const query = hash.includes('?') ? new URLSearchParams(hash.slice(hash.indexOf('?') + 1)) : null;
     pendingCode = (query?.get('table') ?? '').trim().toUpperCase();
+    invitedTo = pendingCode;
     if (settings.serverUrl) online.connect(settings.serverUrl);
   });
   onDestroy(() => online.close());
@@ -59,6 +62,7 @@
   });
 
   const room = $derived(online.room);
+  $effect(() => { if (online.room) invitedTo = ''; });
   const isHost = $derived(!!room && !!online.user && room.hostId === online.user.id);
   const canStart = $derived(!!room && room.seats.length >= room.minSeats);
 
@@ -138,7 +142,8 @@
     <div class="panel stack auth">
       <div class="spread">
         <strong class="small-head">
-          {mode === 'guest' ? 'Who is playing?' : mode === 'register' ? 'Make an account' : 'Sign in'}
+          {#if invitedTo}You're invited to table <span class="code">{invitedTo}</span>
+          {:else}{mode === 'guest' ? 'Who is playing?' : mode === 'register' ? 'Make an account' : 'Sign in'}{/if}
         </strong>
         <span class="status {online.status}">{online.status}</span>
       </div>
@@ -151,6 +156,13 @@
         </div>
       {:else if online.waking}
         <p class="muted tiny">Waking the game server up. The first visit after a quiet spell can take up to a minute.</p>
+      {/if}
+      {#if invitedTo}
+        <p class="tiny">
+          {mode === 'guest'
+            ? 'Pick a name to sit down, or sign in to keep your record.'
+            : 'Sign in and you go straight to the table.'}
+        </p>
       {/if}
       <form class="stack" onsubmit={submitAuth}>
         <label class="field"><span>Name</span>
@@ -165,7 +177,7 @@
         {/if}
         <div class="row wrap">
           <button class="btn primary" type="submit" disabled={online.status !== 'online' || !username.trim()}>
-            {mode === 'guest' ? 'Play' : mode === 'register' ? 'Create account' : 'Sign in'}
+            {mode === 'guest' ? (invitedTo ? 'Join the table' : 'Play') : mode === 'register' ? 'Create account' : 'Sign in'}
           </button>
           {#if mode === 'guest'}
             <button class="btn ghost small" type="button" onclick={() => (mode = 'login')}>
