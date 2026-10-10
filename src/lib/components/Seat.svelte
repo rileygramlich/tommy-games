@@ -28,7 +28,14 @@
     transform: translateY(-2px);
   }
   .seat.you .name { color: var(--brass-soft); }
-  .name { font-family: var(--serif); font-size: 0.98rem; }
+  /* In a narrow seat a long name gives way ("Marigo…"), not the bot and dealer
+     marks, which used to be pushed out past the box's right edge. */
+  .seat .row { flex-wrap: nowrap; min-width: 0; gap: 0.35rem; }
+  .name {
+    font-family: var(--serif); font-size: 0.98rem;
+    min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .bot, .dealer { flex-shrink: 0; }
   .bot { font-size: 0.6rem; opacity: 0.65; }
   .dealer {
     font-size: 0.58rem; font-weight: 700; letter-spacing: 0.05em;
