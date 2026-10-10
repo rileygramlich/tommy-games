@@ -528,7 +528,7 @@
     .hand { min-height: 0; gap: 0.35rem; }
     /* Every opponent in view: as many columns as fit, then a second row. A
        sideways-scrolling strip hid the last seat and clipped badges. */
-    .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0.45rem; }
+    .seats { display: grid; grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); gap: 0.45rem; }
     .seats :global(.seat) { min-width: 0; }
     .board { min-height: 0; padding: 0.7rem; }
     .overlay { padding: 0.6rem; align-items: end; }
