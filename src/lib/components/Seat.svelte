@@ -35,10 +35,15 @@
     border: 1px solid currentColor; border-radius: 999px; padding: 0 0.35em; opacity: 0.7;
   }
   .detail { font-size: 0.78rem; opacity: 0.75; font-variant-numeric: tabular-nums; }
+  /* A tab in the box's own top-right corner. It used to hang 8px outside the
+     corner, which a scrolling row of seats then cut in half, and which sat
+     across the gold border of whoever was on turn. */
   .badge {
-    position: absolute; top: -8px; right: -8px;
-    min-width: 26px; text-align: center;
+    position: absolute; top: -1px; right: -1px;
+    min-width: 24px; text-align: center;
     background: var(--brass); color: #2b2110;
-    border-radius: 999px; font-size: 0.75rem; font-weight: 700; padding: 0.1em 0.4em;
+    border-radius: 0 var(--radius-sm) 0 var(--radius-sm);
+    font-size: 0.72rem; font-weight: 700; padding: 0.12em 0.45em;
   }
+  .seat:has(.badge) .row { padding-right: 1.3rem; }
 </style>

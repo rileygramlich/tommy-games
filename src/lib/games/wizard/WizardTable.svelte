@@ -42,12 +42,13 @@
   function seatDetail(p) {
     if (v.phase === 'bidding' || v.phase === 'chooseTrump') {
       if (p.bid != null) return `bid ${p.bid}`;
-      return p.hasBid ? 'bid in' : `${p.cards} cards`;
+      return p.hasBid ? 'bid in' : `${p.cards} card${p.cards === 1 ? '' : 's'}`;
     }
     // A concealed bid shows as a question mark rather than an em dash: it exists,
     // you just are not allowed to know it.
     const bid = p.bid != null ? p.bid : p.hasBid ? '?' : '–';
-    return `${p.tricks}/${bid} tricks · ${p.score} pts`;
+    // No-break spaces keep "0 pts" and "0/1 tricks" whole when a narrow seat wraps.
+    return `${p.tricks}/${bid}\u00a0tricks · ${p.score}\u00a0pts`;
   }
 </script>
 
@@ -280,8 +281,10 @@
   @media (max-width: 640px) {
     /* One thumb, one column: hands shrink, strips scroll, sheets scroll. */
     .hand { min-height: 0; gap: 0.3rem; }
-    .seats { flex-wrap: nowrap; overflow-x: auto; padding-bottom: 0.25rem; scrollbar-width: none; }
-    .seats::-webkit-scrollbar { display: none; }
+    /* Every opponent in view: as many columns as fit, then a second row. A
+       sideways-scrolling strip hid the last seat and clipped badges. */
+    .seats { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 0.45rem; }
+    .seats :global(.seat) { min-width: 0; }
     .board { min-height: 0; padding: 0.7rem; }
     .overlay { padding: 0.6rem; align-items: end; }
     .sheet, .result { max-height: 88dvh; overflow-y: auto; }
