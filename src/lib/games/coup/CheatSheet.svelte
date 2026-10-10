@@ -39,7 +39,8 @@
             <span class="muted">No action.</span>
           {/if}
         </span>
-        <span role="cell">
+        <span role="cell" class="blocks">
+          <span class="label">Blocks</span>{' '}
           {#if c.blocks.length}{c.blocks.map((b) => BLOCKS[b]).join(', ')}{:else}<span class="muted">—</span>{/if}
         </span>
       </div>
@@ -53,22 +54,22 @@
       <span role="columnheader">Blocked by</span>
     </div>
     <div class="row" role="row">
-      <strong role="cell">Income</strong><span role="cell">Take 1 coin.</span><span role="cell" class="muted">—</span>
+      <strong role="cell">Income</strong><span role="cell">Take 1 coin.</span><span role="cell" class="blocks muted"><span class="label">Blocked by</span>{' '}—</span>
     </div>
     <div class="row" role="row">
       <strong role="cell">Foreign aid</strong><span role="cell">Take 2 coins.</span>
-      <span role="cell">{rows.some((c) => c.blocks.includes('foreignAid')) ? rows.filter((c) => c.blocks.includes('foreignAid')).map((c) => c.name).join(', ') : '—'}</span>
+      <span role="cell" class="blocks"><span class="label">Blocked by</span>{' '}{rows.some((c) => c.blocks.includes('foreignAid')) ? rows.filter((c) => c.blocks.includes('foreignAid')).map((c) => c.name).join(', ') : '—'}</span>
     </div>
     <div class="row" role="row">
       <strong role="cell">Coup</strong>
       <span role="cell">Pay 7 coins: a player loses an influence. With 10 or more coins you must.</span>
-      <span role="cell" class="muted">Nobody</span>
+      <span role="cell" class="blocks muted"><span class="label">Blocked by</span>{' '}nobody</span>
     </div>
     {#if factions}
       <div class="row" role="row">
         <strong role="cell">Convert</strong>
         <span role="cell">Pay 1 to change your own faction, or 2 to change another player's. The coins go to the reserve.</span>
-        <span role="cell" class="muted">—</span>
+        <span role="cell" class="blocks muted"><span class="label">Blocked by</span>{' '}—</span>
       </div>
     {/if}
   </div>
@@ -80,7 +81,7 @@
 </div>
 
 <style>
-  .cheat { display: grid; gap: 0.9rem; }
+  .cheat { display: grid; gap: 0.9rem; container-type: inline-size; }
   .grid { display: grid; font-size: 0.82rem; line-height: 1.35; }
   .head, .row {
     display: grid;
@@ -98,6 +99,19 @@
   }
   .row { border-top: 1px solid color-mix(in srgb, var(--ink-faint) 25%, transparent); }
   .who { display: flex; }
+  .label { display: none; }
+
+  /* A phone held upright: no room for a third column ("Assassination" ran
+     past the panel's edge at 320px). What a card blocks goes under its action. */
+  @container (max-width: 330px) {
+    .head, .row, .general .head, .general .row { grid-template-columns: 2.9rem 1fr; row-gap: 0.15rem; }
+    .general .head, .general .row { grid-template-columns: 5.2rem 1fr; }
+    .head span:last-child { display: none; }
+    .blocks { grid-column: 2; font-size: 0.76rem; color: var(--ink-soft); }
+    .blocks.muted { color: var(--ink-faint); }
+    .label { display: inline; color: var(--ink-faint); }
+    .who { grid-row: span 2; }
+  }
   .muted { color: var(--ink-faint); }
   .tiny { font-size: 0.74rem; }
 </style>
