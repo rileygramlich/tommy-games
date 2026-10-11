@@ -1,6 +1,7 @@
 <script>
   import { settings, saveSettings } from '../stores/settings.svelte.js';
   import { defaultOptions } from '../games/registry.js';
+  import HouseRules from './HouseRules.svelte';
 
   let { game, onstart, oncancel } = $props();
 
@@ -82,28 +83,7 @@
     {/if}
   </div>
 
-  {#if game.options.length}
-    <div class="panel stack">
-      <strong class="small-head">House rules</strong>
-      {#each game.options as option (option.key)}
-        {#if option.type === 'toggle'}
-          <label class="check">
-            <input type="checkbox" bind:checked={options[option.key]} />
-            <span>{option.label}{option.help ? ' — ' : ''}{#if option.help}<span class="muted">{option.help}</span>{/if}</span>
-          </label>
-        {:else}
-          <label class="check">
-            <span>{option.label}</span>
-            <select bind:value={options[option.key]}>
-              {#each option.choices as choice (choice.value)}
-                <option value={choice.value}>{choice.label}</option>
-              {/each}
-            </select>
-          </label>
-        {/if}
-      {/each}
-    </div>
-  {/if}
+  <HouseRules {game} {options} onchange={(o) => (options = o)} />
 
   <div class="row wrap">
     <button class="btn primary" onclick={start}>Deal</button>
@@ -119,14 +99,11 @@
   .idx { color: var(--ink-faint); font-size: 0.8rem; }
   .toggle { display: flex; gap: 0.25rem; }
   .toggle .on { background: var(--felt); color: #f2e9d6; border-color: var(--felt-deep); }
-  .check { display: flex; gap: 0.5rem; align-items: center; font-size: 0.88rem; color: var(--ink-soft); }
-  .small-head { font-family: var(--serif); font-size: 1rem; }
   .tiny { font-size: 0.75rem; }
 
   @media (max-width: 480px) {
     /* The name field gets a line of its own rather than being squeezed. */
     .seatrow { display: flex; flex-wrap: wrap; align-items: center; }
     .seatrow input { flex: 1 1 7rem; min-width: 0; }
-    .check { flex-wrap: wrap; }
   }
 </style>

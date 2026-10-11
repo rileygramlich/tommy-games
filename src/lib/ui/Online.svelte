@@ -2,7 +2,8 @@
   import { onMount, onDestroy } from 'svelte';
   import { Online, RemoteTable } from '../net/online.svelte.js';
   import { settings, saveSettings, DEFAULT_SERVER } from '../stores/settings.svelte.js';
-  import { GAMES, GAME_LIST, getGame } from '../games/registry.js';
+  import { GAMES, GAME_LIST, getGame, defaultOptions } from '../games/registry.js';
+  import HouseRules from './HouseRules.svelte';
 
   let { go } = $props();
 
@@ -240,6 +241,9 @@
         {/each}
       </div>
 
+      <HouseRules game={getGame(room.game)} options={{ ...defaultOptions(getGame(room.game)), ...room.options }}
+        editable={isHost} onchange={(_, changed) => online.setOptions(changed)} />
+
       {#if isHost}
         <div class="row wrap">
           <button class="btn small" disabled={room.seats.length >= room.maxSeats} onclick={() => online.addBot()}>+ Add bot</button>
@@ -299,7 +303,7 @@
           {#each GAME_LIST as g (g.id)}<option value={g.id}>{g.name}</option>{/each}
         </select>
         <input type="text" bind:value={newName} placeholder="Table name (optional)" />
-        <button class="btn primary" onclick={() => online.createRoom(newGame, newName, {})}>Create</button>
+        <button class="btn primary" onclick={() => online.createRoom(newGame, newName, defaultOptions(getGame(newGame)))}>Create</button>
       </div>
     </div>
 
