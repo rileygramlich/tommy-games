@@ -10,6 +10,8 @@
 // maximises the score.
 
 const MIN_WORD_LETTERS = 2;
+// Ten cards, and the two-letter cards (cl, er, in, qu, th) can double that.
+const MAX_WORD_LETTERS = 20;
 
 export function findWords(cards, dict) {
   const n = cards.length;
@@ -23,12 +25,12 @@ export function findWords(cards, dict) {
         best.set(mask, { word: prefix, value, cardIds: stack.slice() });
       }
     }
-    if (prefix.length >= 10) return; // no dictionary word is longer
+    if (prefix.length >= MAX_WORD_LETTERS) return; // no dictionary word is longer
     for (let i = 0; i < n; i++) {
       const bit = 1 << i;
       if (mask & bit) continue;
       const next = prefix + cards[i].letters;
-      if (next.length > 10 || !dict.hasPrefix(next)) continue;
+      if (next.length > MAX_WORD_LETTERS || !dict.hasPrefix(next)) continue;
       stack.push(cards[i].id);
       walk(mask | bit, next, value + cards[i].value);
       stack.pop();

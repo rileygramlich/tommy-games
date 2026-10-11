@@ -110,7 +110,7 @@ export const GAMES = {
       { title: 'The rounds', text: 'Eight rounds. The first deals three cards each, the last deals ten. On your turn, draw one card — from the deck or the top of the discard pile — then discard one.' },
       { title: 'Going out', text: 'When every card left in your hand after discarding can be arranged into words of two letters or more, lay them all down and go out. Everyone else gets one final turn, then lays down whatever they can.' },
       { title: 'Scoring', text: 'Add up the cards in the words you laid down, then subtract the cards you were left holding. Two bonuses of 10 points each round: the longest word, and the most words. Each bonus has to be won outright — if two or more players tie for it, nobody is paid.' },
-      { title: 'The word list', text: 'This table judges words against a 52,000-word list of ordinary English — no proper nouns, no abbreviations. Two-letter words come from the standard tournament set, so qi, za and xu all play.' }
+      { title: 'The word list', text: 'Any word legal in Scrabble plays: about 173,000 of them, from the ENABLE list that most Scrabble apps use. No proper nouns or abbreviations. Two-letter words follow the current tournament set, so qi, za and xu all play.' }
     ]
   },
 

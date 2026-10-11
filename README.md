@@ -96,9 +96,11 @@ game's own rules page too:
 
 ### Quiddler's word list
 
-`public/data/quiddler-words.txt` is 52k words, built from the system dictionary by
-`npm run dict`: lowercase entries only (so no proper nouns), 3–10 letters, no
-vowel-free abbreviations, plus the standard tournament two-letter set. The client
+`public/data/quiddler-words.txt` is about 173k Scrabble-legal words, built by
+`npm run dict` from ENABLE (public domain, the base of most Scrabble word apps and
+close to the North American tournament list): no proper nouns or abbreviations,
+2–20 letters (the cl/er/in/qu/th cards carry two letters), plus the current
+tournament two-letter set and a few later additions such as zen and emoji. The client
 loads it once and does prefix lookups by binary search, which is what keeps the
 bots fast enough to think on every turn.
 
