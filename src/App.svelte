@@ -9,6 +9,9 @@
   import Settings from './lib/ui/Settings.svelte';
   import Online from './lib/ui/Online.svelte';
   import Cards from './lib/ui/Cards.svelte';
+  import ArcadePlay from './lib/arcade/ArcadePlay.svelte';
+  import ArcadeShelf from './lib/arcade/ArcadeShelf.svelte';
+  import { getArcadeGame } from './lib/arcade/registry.js';
 
   let route = $state(parse(location.hash));
   let table = $state(null);
@@ -66,7 +69,8 @@
   }
 
   const game = $derived(route.arg ? getGame(route.arg) : null);
-  const inGame = $derived(route.screen === 'play' && !!table);
+  const arcadeGame = $derived(route.screen === 'arcade' && route.arg ? getArcadeGame(route.arg) : null);
+  const inGame = $derived((route.screen === 'play' && !!table) || !!arcadeGame);
 
   function toggleTheme() {
     const order = ['auto', 'light', 'dark'];
@@ -82,6 +86,7 @@
         <span>Tommy Games</span>
       </button>
       <nav class="row">
+        <button class="btn ghost small" onclick={() => go('#/arcade')}>Arcade</button>
         <button class="btn ghost small" onclick={() => go('#/online')}>Online</button>
         <button class="btn ghost small" onclick={() => go('#/settings')}>Settings</button>
         <button class="btn ghost small" onclick={toggleTheme} aria-label="Change theme">
@@ -102,6 +107,10 @@
       <Online {go} />
     {:else if route.screen === 'cards'}
       <Cards {go} />
+    {:else if route.screen === 'arcade' && arcadeGame}
+      <!-- drawn below, outside this animated block: a transform here would trap its full-screen layout -->
+    {:else if route.screen === 'arcade'}
+      <ArcadeShelf {go} />
     {:else if route.screen === 'play' && game}
       {#if table && tableGame?.id === game.id}
         {@const Table = game.component}
@@ -122,11 +131,19 @@
     {/if}
   </main>
 
+  {#if arcadeGame}
+    {#key arcadeGame.id}
+      <ArcadePlay game={arcadeGame} onexit={() => go('#/arcade')} />
+    {/key}
+  {/if}
+
   {#if !inGame}
     <footer class="foot muted">
       <span>Tommy Games</span>
       <span>·</span>
       <span>Quiddler and Wizard are the property of their respective publishers; this is a fan-made table for playing them.</span>
+      <span>·</span>
+      <span>Arcade art and sound by <a href="https://kenney.nl">Kenney</a> (CC0); font Press Start 2P (OFL). The arcade games are original and not affiliated with any arcade publisher.</span>
     </footer>
   {/if}
 </div>

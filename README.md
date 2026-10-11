@@ -26,6 +26,21 @@ Three ways to play each one:
 | Pass-and-play | Nothing — hands hide behind a curtain between turns |
 | Online with friends | The little WebSocket server in `server/` running somewhere |
 
+There is also an **Arcade** (`#/arcade`): five one-player action games in the
+spirit of the classics, with original names, code and maze, and free-to-use art.
+
+| Game | Plays like |
+| --- | --- |
+| **Sky Swarm** | Squadrons swoop into formation, then peel off and dive at you |
+| **Invaders from Above** | Marching rows that speed up as they thin out, crumbling bunkers, a mystery saucer |
+| **Road Hopper** | Five lanes of traffic, then a river of logs and diving crates; five homes to fill |
+| **Maze Muncher** | A dungeon maze of coins, four monsters that each hunt differently, potions that turn them |
+| **Barrel Climb** | Sloped girders, ladders and rolling barrels; jump them, grab a hammer, reach the top |
+
+They play with the keyboard (arrows, Space, P to pause) or, on a phone, a d-pad
+and buttons under the screen, plus swipes in the maze games. High scores stay on
+the device. Sound starts on the first tap, as browsers require.
+
 Every screen is built for a phone first: no horizontal scrolling at 360px, cards
 and boards sized in viewport units, 40px tap targets, and overlays that behave
 like sheets.
@@ -66,6 +81,17 @@ Engines agree on a handful of phase names so the tables know what to do with
 them without knowing the game: `trickEnd` and `turnEnd` clear themselves after a
 beat, while `roundEnd`, `handEnd`, `gameEnd` and `show` wait for a person to read
 them. Anything else is a decision the seat on turn has to make.
+
+The arcade is separate from all that, since its games run in real time:
+
+```
+src/lib/arcade/runtime.js            the cabinet: 60 Hz loop, sprites, sound, input, title/pause/game over, high score
+src/lib/arcade/games/<game>.js       one module per game: screen size, assets, create(rt) → update/draw
+src/lib/arcade/registry.js           the arcade shelf, with controls for each game; code loads on demand
+src/lib/arcade/ArcadePlay.svelte     the full-screen player with touch controls
+public/arcade/                       sprites, sounds and the font, with CREDITS.md
+test/arcade.test.js                  runs each game headless with scripted input
+```
 
 **Adding a game** means writing those two modules plus a table screen, then adding
 one entry to `src/lib/games/registry.js` — the shelf, the setup screen with its
@@ -215,6 +241,11 @@ games. Each game's rules page credits its own.
 | Jester | Jan Matejko, *Stańczyk*, 1862 — National Museum in Warsaw |
 
 The checkers crown is Tabler Icons' `crown` (MIT).
+
+The arcade's sprites and sounds are by [Kenney](https://kenney.nl), released
+CC0 (public domain); its font is Press Start 2P (SIL Open Font License). The
+full list is in `public/arcade/CREDITS.md`. The arcade games are original code
+and use no art, sound, characters or names from the arcade games they recall.
 
 
 Quiddler is published by Set Enterprises; Wizard by Ken Fisher and US Games

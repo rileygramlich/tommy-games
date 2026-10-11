@@ -1,6 +1,7 @@
 <script>
   import SuggestionBox from './SuggestionBox.svelte';
   import { GAME_LIST } from '../games/registry.js';
+  import ArcadeShelf from '../arcade/ArcadeShelf.svelte';
   let { go } = $props();
 </script>
 
@@ -34,6 +35,8 @@
 
   <SuggestionBox />
 </div>
+
+<ArcadeShelf {go} />
 
 <style>
   .hero { max-width: 40rem; margin: 2rem 0 2.4rem; }
