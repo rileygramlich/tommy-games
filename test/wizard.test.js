@@ -199,3 +199,20 @@ test('a seat view never leaks another player\'s hand', () => {
   assert.equal(v.hand.length, state.hands[1].length);
   assert.equal(JSON.stringify(v).includes(state.hands[2][0].id), false);
 });
+
+test('the last round deals every card, so there is no trump', () => {
+  for (const n of [3, 4, 5, 6]) {
+    const state = E.createGame({ players: players(n), seed: 11 });
+    while (state.phase !== 'gameOver') {
+      if (state.round === state.options.rounds) break;
+      if (state.phase === 'trickEnd' || state.phase === 'roundEnd') { E.applyMove(state, 0, { type: 'continue' }); continue; }
+      const seat = E.activeSeats(state)[0];
+      assert.ok(E.applyMove(state, seat, bot.chooseMove(E.view(state, seat))).ok);
+    }
+    assert.equal(state.round, 60 / n, `${n} players: last round`);
+    assert.equal(state.hands.flat().length, 60, `${n} players: every card dealt`);
+    assert.equal(state.trumpCard, null, `${n} players: a card was turned up`);
+    assert.equal(state.trumpSuit, null, `${n} players: trump was set`);
+    assert.equal(state.phase, 'bidding');
+  }
+});
