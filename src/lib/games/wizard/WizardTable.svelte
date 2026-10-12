@@ -69,6 +69,10 @@
           <div class="trump-name">
             {#if v.trumpSuit}
               <span class:red={v.trumpSuit === 'H' || v.trumpSuit === 'D'}>{SUIT_SYMBOLS[v.trumpSuit]} {SUIT_NAMES[v.trumpSuit]}</span>
+            {:else if !v.trumpCard && v.round > 0}
+              None <span class="why">every card is dealt</span>
+            {:else if v.trumpCard?.kind === 'jester'}
+              None <span class="why">a Jester turned up</span>
             {:else}
               None
             {/if}
@@ -296,4 +300,5 @@
     .bid-summary { position: static; margin-bottom: 0.4rem; }
     .trump { gap: 0.4rem; }
   }
+  .why { display: block; font-size: 0.7rem; font-weight: 400; color: var(--ink-faint); }
 </style>
